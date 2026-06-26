@@ -14,26 +14,12 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Insira um e-mail válido." }),
   password: z.string().min(6, { message: "A senha deve ter pelo menos 6 caracteres." }),
-});
-
-const registerSchema = z.object({
-  name: z.string().min(3, { message: "Nome deve ter pelo menos 3 caracteres." }),
-  email: z.string().email({ message: "Insira um e-mail válido." }).refine(
-    e => ["@ufsc.br", "@grad.ufsc.br", "@posgrad.ufsc.br", "@servidor.ufsc.br"].some(d => e.endsWith(d)),
-    { message: "Use um e-mail institucional da UFSC." }
-  ),
-  password: z.string().min(6, { message: "A senha deve ter pelo menos 6 caracteres." }),
-  course: z.string().min(2, { message: "Informe seu curso ou área." }),
-  department: z.string().min(2, { message: "Informe seu departamento." }),
-  entryYear: z.string().min(4, { message: "Informe o ano de ingresso." }),
-  role: z.string().min(1, { message: "Selecione seu vínculo." }),
 });
 
 export default function Landing() {
@@ -47,13 +33,15 @@ export default function Landing() {
     defaultValues: { email: "", password: "" },
   });
 
-  const registerForm = useForm<z.infer<typeof registerSchema>>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: {
-      name: "", email: "", password: "", course: "",
-      department: "", entryYear: new Date().getFullYear().toString(), role: "student",
-    },
-  });
+  const [regName, setRegName] = useState("");
+  const [regEmail, setRegEmail] = useState("");
+  const [regPassword, setRegPassword] = useState("");
+  const [regRole, setRegRole] = useState("student");
+  const [regEntryYear, setRegEntryYear] = useState(new Date().getFullYear().toString());
+  const [regCourse, setRegCourse] = useState("");
+  const [regDepartment, setRegDepartment] = useState("");
+  const [regLoading, setRegLoading] = useState(false);
+  const [regErrors, setRegErrors] = useState<Record<string, string>>({});
 
   async function onLogin(values: z.infer<typeof loginSchema>) {
     try {
@@ -64,12 +52,27 @@ export default function Landing() {
     }
   }
 
-  async function onRegister(values: z.infer<typeof registerSchema>) {
+  async function onRegister(e: React.FormEvent) {
+    e.preventDefault();
+    const errors: Record<string, string> = {};
+    if (regName.trim().length < 3) errors.name = "Nome deve ter pelo menos 3 caracteres.";
+    if (!regEmail.includes("@")) errors.email = "Insira um e-mail válido.";
+    else if (!["@ufsc.br", "@grad.ufsc.br", "@posgrad.ufsc.br", "@servidor.ufsc.br"].some(d => regEmail.endsWith(d)))
+      errors.email = "Use um e-mail institucional da UFSC.";
+    if (regPassword.length < 6) errors.password = "A senha deve ter pelo menos 6 caracteres.";
+    if (regCourse.trim().length < 2) errors.course = "Informe seu curso ou área.";
+    if (regDepartment.trim().length < 2) errors.department = "Informe seu departamento.";
+    if (regEntryYear.length < 4) errors.entryYear = "Informe o ano de ingresso.";
+    setRegErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+    setRegLoading(true);
     try {
-      await register(values);
+      await register({ name: regName, email: regEmail, password: regPassword, role: regRole, entryYear: regEntryYear, course: regCourse, department: regDepartment });
       setLocation("/feed");
     } catch (err: any) {
       toast({ title: "Erro ao cadastrar", description: err.message, variant: "destructive" });
+    } finally {
+      setRegLoading(false);
     }
   }
 
@@ -111,12 +114,7 @@ export default function Landing() {
       </div>
 
       <div className="flex-1 bg-background flex flex-col justify-start px-8 py-12 md:px-16 lg:px-24 items-center overflow-y-auto">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="w-full max-w-md space-y-6"
-        >
+        <div className="w-full max-w-md space-y-6">
           <div className="flex rounded-xl border border-border overflow-hidden">
             <button
               onClick={() => setTab("login")}
@@ -184,116 +182,83 @@ export default function Landing() {
                 <h2 className="text-2xl font-bold tracking-tight text-foreground">Criar conta</h2>
                 <p className="text-muted-foreground text-sm mt-1">Use seu e-mail institucional da UFSC</p>
               </div>
-              <Form {...registerForm}>
-                <form onSubmit={registerForm.handleSubmit(onRegister)} className="space-y-4">
-                  <FormField
-                    control={registerForm.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nome completo</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Seu nome completo" autoComplete="name" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+              <form onSubmit={onRegister} className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Nome completo</label>
+                  <Input
+                    value={regName}
+                    onChange={e => setRegName(e.target.value)}
+                    placeholder="Seu nome completo"
                   />
-                  <FormField
-                    control={registerForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>E-mail UFSC</FormLabel>
-                        <FormControl>
-                          <Input placeholder="matricula@grad.ufsc.br" autoComplete="email" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                  {regErrors.name && <p className="text-xs font-medium text-destructive">{regErrors.name}</p>}
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">E-mail UFSC</label>
+                  <Input
+                    type="email"
+                    value={regEmail}
+                    onChange={e => setRegEmail(e.target.value)}
+                    placeholder="matricula@grad.ufsc.br"
                   />
-                  <FormField
-                    control={registerForm.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Senha</FormLabel>
-                        <FormControl>
-                          <Input type="password" placeholder="••••••••" autoComplete="new-password" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                  {regErrors.email && <p className="text-xs font-medium text-destructive">{regErrors.email}</p>}
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Senha</label>
+                  <Input
+                    type="password"
+                    value={regPassword}
+                    onChange={e => setRegPassword(e.target.value)}
+                    placeholder="••••••••"
                   />
-                  <div className="grid grid-cols-2 gap-3">
-                    <FormField
-                      control={registerForm.control}
-                      name="role"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Vínculo</FormLabel>
-                          <Select value={field.value} onValueChange={field.onChange} modal={false}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selecione" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="student">Estudante</SelectItem>
-                              <SelectItem value="professor">Professor</SelectItem>
-                              <SelectItem value="staff">Servidor</SelectItem>
-                              <SelectItem value="alumni">Egresso</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={registerForm.control}
-                      name="entryYear"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Ano de ingresso</FormLabel>
-                          <FormControl>
-                            <Input placeholder="2024" maxLength={4} {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                  {regErrors.password && <p className="text-xs font-medium text-destructive">{regErrors.password}</p>}
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground">Vínculo</label>
+                    <select
+                      value={regRole}
+                      onChange={e => setRegRole(e.target.value)}
+                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring text-foreground"
+                    >
+                      <option value="student">Estudante</option>
+                      <option value="professor">Professor</option>
+                      <option value="staff">Servidor</option>
+                      <option value="alumni">Egresso</option>
+                    </select>
                   </div>
-                  <FormField
-                    control={registerForm.control}
-                    name="course"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Curso / Área</FormLabel>
-                        <FormControl>
-                          <Input placeholder="ex: Ciência da Computação" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground">Ano de ingresso</label>
+                    <Input
+                      value={regEntryYear}
+                      onChange={e => setRegEntryYear(e.target.value)}
+                      placeholder="2024"
+                      maxLength={4}
+                    />
+                    {regErrors.entryYear && <p className="text-xs font-medium text-destructive">{regErrors.entryYear}</p>}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Curso / Área</label>
+                  <Input
+                    value={regCourse}
+                    onChange={e => setRegCourse(e.target.value)}
+                    placeholder="ex: Ciência da Computação"
                   />
-                  <FormField
-                    control={registerForm.control}
-                    name="department"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Departamento / Centro</FormLabel>
-                        <FormControl>
-                          <Input placeholder="ex: INE - CTC" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                  {regErrors.course && <p className="text-xs font-medium text-destructive">{regErrors.course}</p>}
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Departamento / Centro</label>
+                  <Input
+                    value={regDepartment}
+                    onChange={e => setRegDepartment(e.target.value)}
+                    placeholder="ex: INE - CTC"
                   />
-                  <Button type="submit" className="w-full" size="lg" disabled={registerForm.formState.isSubmitting}>
-                    {registerForm.formState.isSubmitting ? "Cadastrando..." : "Criar conta"}
-                  </Button>
-                </form>
-              </Form>
+                  {regErrors.department && <p className="text-xs font-medium text-destructive">{regErrors.department}</p>}
+                </div>
+                <Button type="submit" className="w-full" size="lg" disabled={regLoading}>
+                  {regLoading ? "Cadastrando..." : "Criar conta"}
+                </Button>
+              </form>
               <p className="text-center text-xs text-muted-foreground">
                 Já tem conta?{" "}
                 <button onClick={() => setTab("login")} className="text-primary underline">
@@ -302,7 +267,7 @@ export default function Landing() {
               </p>
             </div>
           )}
-        </motion.div>
+        </div>
       </div>
     </div>
   );
