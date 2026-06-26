@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
+import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -42,6 +43,8 @@ export default function Landing() {
   const [regDepartment, setRegDepartment] = useState("");
   const [regLoading, setRegLoading] = useState(false);
   const [regErrors, setRegErrors] = useState<Record<string, string>>({});
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegPassword, setShowRegPassword] = useState(false);
 
   async function onLogin(values: z.infer<typeof loginSchema>) {
     try {
@@ -158,7 +161,12 @@ export default function Landing() {
                       <FormItem>
                         <FormLabel>Senha</FormLabel>
                         <FormControl>
-                          <Input type="password" placeholder="••••••••" autoComplete="current-password" {...field} />
+                          <div className="relative">
+                            <Input type={showLoginPassword ? "text" : "password"} placeholder="••••••••" autoComplete="current-password" className="pr-10" {...field} />
+                            <button type="button" onClick={() => setShowLoginPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                              {showLoginPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -204,12 +212,18 @@ export default function Landing() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">Senha</label>
-                  <Input
-                    type="password"
-                    value={regPassword}
-                    onChange={e => setRegPassword(e.target.value)}
-                    placeholder="••••••••"
-                  />
+                  <div className="relative">
+                    <Input
+                      type={showRegPassword ? "text" : "password"}
+                      value={regPassword}
+                      onChange={e => setRegPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="pr-10"
+                    />
+                    <button type="button" onClick={() => setShowRegPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      {showRegPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                   {regErrors.password && <p className="text-xs font-medium text-destructive">{regErrors.password}</p>}
                 </div>
                 <div className="grid grid-cols-2 gap-3">
