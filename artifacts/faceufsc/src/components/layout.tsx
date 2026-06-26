@@ -99,7 +99,7 @@ export function Layout({ children }: { children: ReactNode }) {
             
             <Link href="/profile/1" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <div className="h-9 w-9 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground font-bold border-2 border-primary-foreground/20">
-                JD
+                AB
               </div>
             </Link>
           </div>
