@@ -110,12 +110,12 @@ export default function Landing() {
         </motion.div>
       </div>
 
-      <div className="flex-1 bg-background flex flex-col justify-center px-8 py-12 md:px-16 lg:px-24 items-center">
+      <div className="flex-1 bg-background flex flex-col justify-start px-8 py-12 md:px-16 lg:px-24 items-center overflow-y-auto">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="w-full max-w-md space-y-6 overflow-y-auto"
+          className="w-full max-w-md space-y-6"
         >
           <div className="flex rounded-xl border border-border overflow-hidden">
             <button
