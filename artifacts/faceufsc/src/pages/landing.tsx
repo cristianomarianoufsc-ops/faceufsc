@@ -232,7 +232,7 @@ export default function Landing() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Vínculo</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select value={field.value} onValueChange={field.onChange} modal={false}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder="Selecione" />
