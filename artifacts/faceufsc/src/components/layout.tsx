@@ -1,12 +1,14 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
-import { Users, Calendar, MessageSquare, Home, Menu, X, LogOut, Search } from "lucide-react";
+import { Users, Calendar, MessageSquare, Home, Menu, LogOut, Search } from "lucide-react";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { Input } from "./ui/input";
+import { useAuth } from "@/contexts/auth";
 
 export function Layout({ children }: { children: ReactNode }) {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
+  const { user, logout } = useAuth();
 
   const navItems = [
     { label: "Feed", href: "/feed", icon: Home },
@@ -14,6 +16,15 @@ export function Layout({ children }: { children: ReactNode }) {
     { label: "Eventos", href: "/events", icon: Calendar },
     { label: "Pessoas", href: "/people", icon: Users },
   ];
+
+  const initials = user
+    ? user.name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase()
+    : "?";
+
+  async function handleLogout() {
+    await logout();
+    setLocation("/");
+  }
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background">
@@ -40,8 +51,8 @@ export function Layout({ children }: { children: ReactNode }) {
                           key={item.href}
                           href={item.href}
                           className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                            isActive 
-                              ? "bg-secondary text-secondary-foreground" 
+                            isActive
+                              ? "bg-secondary text-secondary-foreground"
                               : "hover:bg-primary/80"
                           }`}
                         >
@@ -52,11 +63,9 @@ export function Layout({ children }: { children: ReactNode }) {
                     })}
                   </nav>
                   <div className="px-4 mt-auto">
-                    <Button variant="outline" className="w-full justify-start text-primary-foreground border-primary-foreground/20 hover:bg-primary/80" asChild>
-                      <Link href="/">
-                        <LogOut className="mr-2 h-4 w-4" />
-                        Sair
-                      </Link>
+                    <Button variant="outline" className="w-full justify-start text-primary-foreground border-primary-foreground/20 hover:bg-primary/80" onClick={handleLogout}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sair
                     </Button>
                   </div>
                 </div>
@@ -75,8 +84,8 @@ export function Layout({ children }: { children: ReactNode }) {
                     key={item.href}
                     href={item.href}
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                      isActive 
-                        ? "bg-secondary text-secondary-foreground" 
+                      isActive
+                        ? "bg-secondary text-secondary-foreground"
                         : "hover:bg-primary/80 text-primary-foreground"
                     }`}
                   >
@@ -96,10 +105,14 @@ export function Layout({ children }: { children: ReactNode }) {
                 className="w-full bg-primary-foreground/10 border-none text-primary-foreground placeholder:text-primary-foreground/60 focus-visible:ring-secondary pl-9"
               />
             </div>
-            
-            <Link href="/profile/1" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <div className="h-9 w-9 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground font-bold border-2 border-primary-foreground/20">
-                AB
+
+            <button onClick={handleLogout} className="hidden md:flex items-center gap-1 text-primary-foreground/70 hover:text-primary-foreground text-xs transition-colors">
+              <LogOut className="h-4 w-4" />
+            </button>
+
+            <Link href={user ? `/profile/${user.id}` : "/"} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <div className="h-9 w-9 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground font-bold border-2 border-primary-foreground/20 text-sm">
+                {initials}
               </div>
             </Link>
           </div>

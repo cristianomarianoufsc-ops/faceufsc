@@ -25,6 +25,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/auth";
 
 const postSchema = z.object({
   content: z.string().min(1, "A publicacao nao pode estar vazia"),
@@ -43,6 +44,7 @@ export default function CommunityDetail() {
   const [, params] = useRoute("/communities/:id");
   const communityId = params?.id ? parseInt(params.id) : 0;
   const { toast } = useToast();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   const { data: community, isLoading: communityLoading } = useGetCommunity(communityId, {
@@ -64,7 +66,7 @@ export default function CommunityDetail() {
 
   function onSubmit(values: z.infer<typeof postSchema>) {
     createPost.mutate(
-      { data: { content: values.content, authorId: 1, communityId } },
+      { data: { content: values.content, authorId: user?.id ?? 1, communityId } },
       {
         onSuccess: () => {
           form.reset();
@@ -77,7 +79,7 @@ export default function CommunityDetail() {
 
   function handleJoin() {
     joinCommunity.mutate(
-      { id: communityId, data: { userId: 1 } },
+      { id: communityId, data: { userId: user?.id ?? 1 } },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetCommunityQueryKey(communityId) });
@@ -146,7 +148,7 @@ export default function CommunityDetail() {
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                     <div className="flex gap-4">
                       <Avatar className="h-10 w-10 border border-border hidden sm:block">
-                        <AvatarFallback className="bg-secondary text-secondary-foreground font-bold">JD</AvatarFallback>
+                        <AvatarFallback className="bg-secondary text-secondary-foreground font-bold">{user ? user.name.split(" ").map(n => n[0]).join("").substring(0,2).toUpperCase() : "?"}</AvatarFallback>
                       </Avatar>
                       <FormField
                         control={form.control}
