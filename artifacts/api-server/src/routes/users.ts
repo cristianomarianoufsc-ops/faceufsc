@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
+// v2
 import { usersTable } from "@workspace/db";
 import { eq, like, or } from "drizzle-orm";
 import { z } from "zod";
