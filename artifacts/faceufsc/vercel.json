@@ -1,5 +1,10 @@
 {
   "outputDirectory": "dist/public",
+  "build": {
+    "env": {
+      "VITE_API_URL": "https://workspaceapi-server-production-f50d.up.railway.app"
+    }
+  },
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
