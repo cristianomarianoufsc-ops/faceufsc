@@ -65,17 +65,26 @@ function AuthRoute({ component: Component }: { component: ComponentType }) {
   return <Component />;
 }
 
+const AuthLandingRoute = () => <AuthRoute component={Landing} />;
+const ProtectedFeedRoute = () => <ProtectedRoute component={Feed} />;
+const ProtectedCommunitiesRoute = () => <ProtectedRoute component={Communities} />;
+const ProtectedCommunityDetailRoute = () => <ProtectedRoute component={CommunityDetail} />;
+const ProtectedEventsRoute = () => <ProtectedRoute component={Events} />;
+const ProtectedEventDetailRoute = () => <ProtectedRoute component={EventDetail} />;
+const ProtectedPeopleRoute = () => <ProtectedRoute component={People} />;
+const ProtectedProfileRoute = () => <ProtectedRoute component={Profile} />;
+
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={() => <AuthRoute component={Landing} />} />
-      <Route path="/feed" component={() => <ProtectedRoute component={Feed} />} />
-      <Route path="/communities" component={() => <ProtectedRoute component={Communities} />} />
-      <Route path="/communities/:id" component={() => <ProtectedRoute component={CommunityDetail} />} />
-      <Route path="/events" component={() => <ProtectedRoute component={Events} />} />
-      <Route path="/events/:id" component={() => <ProtectedRoute component={EventDetail} />} />
-      <Route path="/people" component={() => <ProtectedRoute component={People} />} />
-      <Route path="/profile/:id" component={() => <ProtectedRoute component={Profile} />} />
+      <Route path="/" component={AuthLandingRoute} />
+      <Route path="/feed" component={ProtectedFeedRoute} />
+      <Route path="/communities" component={ProtectedCommunitiesRoute} />
+      <Route path="/communities/:id" component={ProtectedCommunityDetailRoute} />
+      <Route path="/events" component={ProtectedEventsRoute} />
+      <Route path="/events/:id" component={ProtectedEventDetailRoute} />
+      <Route path="/people" component={ProtectedPeopleRoute} />
+      <Route path="/profile/:id" component={ProtectedProfileRoute} />
       <Route component={NotFound} />
     </Switch>
   );
