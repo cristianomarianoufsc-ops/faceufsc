@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { usersTable } from "@workspace/db";
 import { eq, like, or } from "drizzle-orm";
+import { z } from "zod";
 
 const router = Router();
 
@@ -39,6 +40,26 @@ router.get("/users/:id", async (req, res) => {
   } catch (err) {
     req.log.error(err);
     res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.patch("/users/me/avatar", async (req, res) => {
+  try {
+    const session = req.session as any;
+    if (!session.userId) return res.status(401).json({ error: "Não autenticado." });
+
+    const { avatarUrl } = z.object({ avatarUrl: z.string().min(1) }).parse(req.body);
+
+    const [user] = await db
+      .update(usersTable)
+      .set({ avatarUrl })
+      .where(eq(usersTable.id, session.userId))
+      .returning();
+
+    res.json({ avatarUrl: user.avatarUrl });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Erro interno do servidor." });
   }
 });
 

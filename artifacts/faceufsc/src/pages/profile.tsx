@@ -1,20 +1,92 @@
+import { useRef, useState } from "react";
 import { useRoute } from "wouter";
-import { format } from "date-fns";
-import { GraduationCap, BookOpen, Building, Briefcase, CalendarDays, MapPin, Users, MessageSquare } from "lucide-react";
+import { GraduationCap, BookOpen, Building, Briefcase, CalendarDays, MapPin, Camera, Loader2 } from "lucide-react";
 import { useGetUser, getGetUserQueryKey } from "@workspace/api-client-react";
 import { Layout } from "@/components/layout";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/auth";
+import { useQueryClient } from "@tanstack/react-query";
+
+const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "";
+
+function resizeImageToBase64(file: File, maxPx = 300): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL("image/jpeg", 0.75));
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
 
 export default function Profile() {
   const [, params] = useRoute("/profile/:id");
   const userId = params?.id ? parseInt(params.id) : 0;
-  
+  const { user: authUser, updateAvatar } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [localAvatar, setLocalAvatar] = useState<string | null>(null);
+
   const { data: user, isLoading } = useGetUser(userId, {
     query: { enabled: !!userId, queryKey: getGetUserQueryKey(userId) }
   });
+
+  const isOwnProfile = authUser?.id === userId;
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Selecione uma imagem válida", variant: "destructive" });
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: "Imagem deve ter menos de 10MB", variant: "destructive" });
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const base64 = await resizeImageToBase64(file, 300);
+
+      const r = await fetch(`${API_BASE}/api/users/me/avatar`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ avatarUrl: base64 }),
+      });
+
+      if (!r.ok) throw new Error("Falha ao salvar foto");
+
+      setLocalAvatar(base64);
+      updateAvatar(base64);
+      queryClient.invalidateQueries({ queryKey: getGetUserQueryKey(userId) });
+      toast({ title: "Foto de perfil atualizada!" });
+    } catch {
+      toast({ title: "Erro ao atualizar foto", variant: "destructive" });
+    } finally {
+      setIsUploading(false);
+      e.target.value = "";
+    }
+  };
 
   const getRoleIcon = (role: string) => {
     switch (role) {
@@ -45,19 +117,47 @@ export default function Profile() {
 
   if (!user) return <Layout><div className="text-center py-20">Usuário não encontrado</div></Layout>;
 
+  const displayAvatar = localAvatar || user.avatarUrl;
+
   return (
     <Layout>
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="h-48 bg-gradient-to-r from-primary/80 to-primary rounded-xl relative mb-20 shadow-sm">
           <div className="absolute -bottom-16 left-8">
-            <Avatar className="h-32 w-32 border-4 border-background shadow-md">
-              {user.avatarUrl ? (
-                <AvatarImage src={user.avatarUrl} alt={user.name} className="object-cover" />
-              ) : null}
-              <AvatarFallback className="bg-primary/5 text-primary text-4xl font-bold">
-                {user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
+            <div className="relative group">
+              <Avatar className="h-32 w-32 border-4 border-background shadow-md">
+                {displayAvatar ? (
+                  <AvatarImage src={displayAvatar} alt={user.name} className="object-cover" />
+                ) : null}
+                <AvatarFallback className="bg-primary/5 text-primary text-4xl font-bold">
+                  {user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+
+              {isOwnProfile && (
+                <>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                    className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity disabled:cursor-wait"
+                    title="Trocar foto de perfil"
+                  >
+                    {isUploading ? (
+                      <Loader2 className="h-7 w-7 text-white animate-spin" />
+                    ) : (
+                      <Camera className="h-7 w-7 text-white" />
+                    )}
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileChange}
+                  />
+                </>
+              )}
+            </div>
           </div>
         </div>
 

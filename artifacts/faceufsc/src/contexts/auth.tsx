@@ -20,6 +20,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
+  updateAvatar: (avatarUrl: string) => void;
 }
 
 interface RegisterData {
@@ -77,8 +78,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }
 
+  function updateAvatar(avatarUrl: string) {
+    setUser(prev => prev ? { ...prev, avatarUrl } : prev);
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, updateAvatar }}>
       {children}
     </AuthContext.Provider>
   );
