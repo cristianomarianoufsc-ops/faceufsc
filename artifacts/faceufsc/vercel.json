@@ -2,6 +2,10 @@
   "outputDirectory": "dist/public",
   "rewrites": [
     {
+      "source": "/api/(.*)",
+      "destination": "https://SUBSTITUA_PELA_URL_DO_RAILWAY/api/$1"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
