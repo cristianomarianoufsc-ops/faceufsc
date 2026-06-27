@@ -2,8 +2,8 @@
   "outputDirectory": "dist/public",
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "https://SUBSTITUA_PELA_URL_DO_RAILWAY/api/$1"
+      "source": "/api/:path*",
+      "destination": "https://workspaceapi-server-production-f50d.up.railway.app/api/:path*"
     },
     {
       "source": "/(.*)",
