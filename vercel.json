@@ -1,8 +1,0 @@
-{
-  "buildCommand": "pnpm --filter @workspace/faceufsc run build",
-  "outputDirectory": "artifacts/faceufsc/dist/public",
-  "installCommand": "pnpm install",
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
-}
