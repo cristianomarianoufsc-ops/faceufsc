@@ -10,6 +10,26 @@ const app: Express = express();
 const sessionSecret = process.env["SESSION_SECRET"];
 if (!sessionSecret) throw new Error("SESSION_SECRET is required");
 
+const allowedOrigins = [
+  /\.vercel\.app$/,
+  /\.replit\.app$/,
+  /\.replit\.dev$/,
+  /localhost/,
+];
+
+app.use(
+  cors({
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true);
+      const ok = allowedOrigins.some(p =>
+        typeof p === "string" ? p === origin : p.test(origin)
+      );
+      cb(null, ok);
+    },
+    credentials: true,
+  })
+);
+
 app.use(session({
   secret: sessionSecret,
   resave: false,
@@ -17,6 +37,7 @@ app.use(session({
   cookie: {
     httpOnly: true,
     secure: process.env["NODE_ENV"] === "production",
+    sameSite: process.env["NODE_ENV"] === "production" ? "none" : "lax",
     maxAge: 7 * 24 * 60 * 60 * 1000,
   },
 }));
@@ -40,7 +61,7 @@ app.use(
     },
   }),
 );
-app.use(cors({ origin: true, credentials: true }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
