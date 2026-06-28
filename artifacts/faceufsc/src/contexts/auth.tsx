@@ -17,6 +17,7 @@ export interface AuthUser {
 interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
+  token: string | null;
   login: (email: string, password: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
@@ -36,13 +37,19 @@ interface RegisterData {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "";
+const TOKEN_KEY = "faceufsc_token";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/auth/me`, { credentials: "include" })
+    const stored = localStorage.getItem(TOKEN_KEY);
+    if (!stored) { setLoading(false); return; }
+    fetch(`${API_BASE}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${stored}` },
+    })
       .then(r => r.ok ? r.json() : null)
       .then(data => setUser(data))
       .catch(() => setUser(null))
@@ -52,29 +59,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function login(email: string, password: string) {
     const r = await fetch(`${API_BASE}/api/auth/login`, {
       method: "POST",
-      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     });
     const data = await r.json();
     if (!r.ok) throw new Error(data.error || "Erro ao entrar");
+    localStorage.setItem(TOKEN_KEY, data.token);
+    setToken(data.token);
     setUser(data);
   }
 
   async function register(data: RegisterData) {
     const r = await fetch(`${API_BASE}/api/auth/register`, {
       method: "POST",
-      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
     const body = await r.json();
     if (!r.ok) throw new Error(body.error || "Erro ao cadastrar");
+    localStorage.setItem(TOKEN_KEY, body.token);
+    setToken(body.token);
     setUser(body);
   }
 
   async function logout() {
-    await fetch(`${API_BASE}/api/auth/logout`, { method: "POST", credentials: "include" });
+    localStorage.removeItem(TOKEN_KEY);
+    setToken(null);
     setUser(null);
   }
 
@@ -83,7 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, updateAvatar }}>
+    <AuthContext.Provider value={{ user, loading, token, login, register, logout, updateAvatar }}>
       {children}
     </AuthContext.Provider>
   );

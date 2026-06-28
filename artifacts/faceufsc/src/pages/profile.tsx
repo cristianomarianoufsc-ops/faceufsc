@@ -37,7 +37,7 @@ function resizeImageToBase64(file: File, maxPx = 300): Promise<string> {
 export default function Profile() {
   const [, params] = useRoute("/profile/:id");
   const userId = params?.id ? parseInt(params.id) : 0;
-  const { user: authUser, updateAvatar } = useAuth();
+  const { user: authUser, updateAvatar, token } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -69,8 +69,10 @@ export default function Profile() {
 
       const r = await fetch(`${API_BASE}/api/users/me/avatar`, {
         method: "PATCH",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ avatarUrl: base64 }),
       });
 
