@@ -302,7 +302,7 @@ export default function Landing() {
                     className={inputClass}
                     error={regErrors.course}
                     onInput={v => setReg(r => ({ ...r, course: v }))}
-                    onChange={c => setReg(r => ({ ...r, course: c.name, department: r.department || c.department }))}
+                    onChange={c => setReg(r => ({ ...r, course: c.name, department: c.department }))}
                   />
                 </div>
 
