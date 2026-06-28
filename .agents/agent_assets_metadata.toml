@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "C-DJspqiFnSPD7E2ej_bw"
+uri = "file://HANDOFF.md"
+type = "text"
+title = "FaceUFSC — Documento de Handoff"

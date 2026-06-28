@@ -1,36 +1,63 @@
-# [Project name]
+# FaceUFSC
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Rede social universitária da UFSC — perfis, conexões, comunidades por curso/departamento, feed de posts.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- `pnpm --filter @workspace/api-server run dev` — API server (porta 8080)
+- `pnpm --filter @workspace/faceufsc run dev` — Frontend React+Vite
+- `pnpm run typecheck` — typecheck completo de todos os pacotes
+- `pnpm run build` — typecheck + build todos os pacotes
+- `pnpm --filter @workspace/api-spec run codegen` — gerar hooks e schemas Zod do OpenAPI spec
+- `pnpm --filter @workspace/db run push` — push do schema para o banco (só dev)
+- Env obrigatório: `DATABASE_URL` (Neon PostgreSQL), `SESSION_SECRET` (chave JWT)
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
 - API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
+- DB: PostgreSQL (Neon) + Drizzle ORM
+- Auth: JWT (jsonwebtoken) — sem cookies, sem sessão
+- Validação: Zod (`zod/v4`), `drizzle-zod`
+- API codegen: Orval (a partir do OpenAPI spec)
 - Build: esbuild (CJS bundle)
+- Frontend: React 19, Vite, Tailwind, shadcn/ui, wouter, TanStack Query
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/faceufsc/` — frontend React+Vite (Vercel)
+- `artifacts/api-server/` — API Express 5 (Railway)
+- `artifacts/faceufsc/src/contexts/auth.tsx` — contexto JWT (token em localStorage)
+- `artifacts/faceufsc/src/pages/profile.tsx` — perfil + upload de foto
+- `artifacts/api-server/src/lib/jwt.ts` — sign/verify/extract token
+- `artifacts/api-server/src/routes/auth.ts` — login, register, logout, /me
+- `artifacts/api-server/src/routes/users.ts` — listar, buscar, avatar
+- `artifacts/faceufsc/.env.production` — VITE_API_BASE_URL → Railway URL
+- `lib/db/` — schema Drizzle + conexão Neon
+- `lib/api-client-react/` — hooks gerados por Orval
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+1. **JWT em vez de cookies de sessão** — Vercel proxy bloqueava `Set-Cookie` do Railway. JWT no `localStorage` + header `Authorization: Bearer` funciona perfeitamente cross-origin. Secret: `SESSION_SECRET` do Railway.
+2. **Foto como base64 no banco** — imagem redimensionada para 300×300px e salva como JPEG base64 na coluna `avatarUrl`. Body limit: 5MB.
+3. **`.env.production` commitado** — URL pública do Railway está no `.env.production` do frontend. Não é secret.
+4. **Monorepo pnpm workspaces** — `lib/db` e `lib/api-client-react` são libs compartilhadas.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Cadastro com e-mail institucional UFSC (`@ufsc.br`, `@grad.ufsc.br`, `@posgrad.ufsc.br`, `@servidor.ufsc.br`)
+- Perfil com foto, curso, departamento, habilidades
+- Upload de foto de perfil (resize automático no browser)
+- Listagem de pessoas com busca
+
+## Deployment
+
+- **Frontend:** Vercel (auto-deploy no push para `main`)
+  - URL: `https://faceufsc-faceufsc.vercel.app`
+  - Build: Vite production, output: `dist/public`
+- **API:** Railway (auto-deploy no push para `main`)
+  - URL: `https://workspaceapi-server-production-f50d.up.railway.app`
+  - Build: esbuild via `build.mjs`
 
 ## User preferences
 
@@ -38,8 +65,12 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- `express-session` com `MemoryStore` perde sessões a cada redeploy → JWT resolve isso
+- Railway muda URL se o serviço for recriado → atualizar `VITE_API_BASE_URL` em `.env.production`
+- Erros TS7030 pré-existentes em `communities.ts`, `events.ts`, `posts.ts` não bloqueiam build (esbuild ignora tipos)
+- Se `SESSION_SECRET` não estiver setado no Railway, a app crasha no boot
 
 ## Pointers
 
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- Ver `HANDOFF.md` para documentação completa de arquitetura e decisões
+- Ver skill `pnpm-workspace` para estrutura do workspace, TypeScript e detalhes dos pacotes
