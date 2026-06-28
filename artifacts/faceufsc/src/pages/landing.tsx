@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth";
+import { CourseAutocomplete } from "@/components/course-autocomplete";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Insira um e-mail válido." }),
@@ -296,20 +297,20 @@ export default function Landing() {
 
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-foreground">Curso / Área</label>
-                  <input
-                    className={inputClass}
-                    placeholder="ex: Ciência da Computação"
+                  <CourseAutocomplete
                     value={reg.course}
-                    onChange={handleRegChange("course")}
+                    className={inputClass}
+                    error={regErrors.course}
+                    onInput={v => setReg(r => ({ ...r, course: v }))}
+                    onChange={c => setReg(r => ({ ...r, course: c.name, department: r.department || c.department }))}
                   />
-                  {regErrors.course && <p className="text-sm font-medium text-destructive">{regErrors.course}</p>}
                 </div>
 
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-foreground">Departamento / Centro</label>
                   <input
                     className={inputClass}
-                    placeholder="ex: INE - CTC"
+                    placeholder="ex: CTC"
                     value={reg.department}
                     onChange={handleRegChange("department")}
                   />
