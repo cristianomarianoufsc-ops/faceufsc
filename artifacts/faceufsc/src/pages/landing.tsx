@@ -309,10 +309,10 @@ export default function Landing() {
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-foreground">Departamento / Centro</label>
                   <input
-                    className={inputClass}
-                    placeholder="ex: CTC"
+                    className={`${inputClass} cursor-default bg-muted text-muted-foreground`}
+                    placeholder="Preenchido automaticamente ao escolher o curso"
                     value={reg.department}
-                    onChange={handleRegChange("department")}
+                    readOnly
                   />
                   {regErrors.department && <p className="text-sm font-medium text-destructive">{regErrors.department}</p>}
                 </div>
