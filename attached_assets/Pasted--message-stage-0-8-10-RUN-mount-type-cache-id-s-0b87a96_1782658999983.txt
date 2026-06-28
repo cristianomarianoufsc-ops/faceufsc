@@ -1,0 +1,107 @@
+{
+  "message": "[stage-0  8/10] RUN --mount=type=cache,id=s/0b87a965-0307-4144-bd68-4caf8b8047fe-node_modules/cache,target=/app/node_modules/.cache pnpm install --no-frozen-lockfile && pnpm --filter @workspace/api-server run build",
+  "timestamp": "2026-06-28T14:59:43.868579593Z",
+  "severity": "error",
+  "children": [
+    {
+      "message": "Scope: all 10 workspace projects\n",
+      "timestamp": "2026-06-28T14:59:54.197138134Z"
+    },
+    {
+      "message": "Progress: resolved 1, reused 0, downloaded 0, added 0\n",
+      "timestamp": "2026-06-28T14:59:54.364026543Z"
+    },
+    {
+      "message": "artifacts/api-server                     |  WARN  deprecated @types/bcryptjs@3.0.0\n",
+      "timestamp": "2026-06-28T14:59:54.677564162Z"
+    },
+    {
+      "message": "artifacts/faceufsc                       |  WARN  deprecated recharts@2.15.4\n",
+      "timestamp": "2026-06-28T14:59:54.818366832Z"
+    },
+    {
+      "message": "Progress: resolved 96, reused 0, downloaded 96, added 0\n",
+      "timestamp": "2026-06-28T14:59:55.365387808Z"
+    },
+    {
+      "message": "Progress: resolved 606, reused 0, downloaded 478, added 0\n",
+      "timestamp": "2026-06-28T14:59:56.365177416Z"
+    },
+    {
+      "message": " WARN  4 deprecated subdependencies found: @esbuild-kit/core-utils@3.3.2, @esbuild-kit/esm-loader@2.6.5, node-domexception@1.0.0, uuid@9.0.1\n",
+      "timestamp": "2026-06-28T14:59:57.115032233Z"
+    },
+    {
+      "message": "Already up to date\n",
+      "timestamp": "2026-06-28T14:59:57.125629974Z"
+    },
+    {
+      "message": "Progress: resolved 744, reused 0, downloaded 603, added 0, done\n",
+      "timestamp": "2026-06-28T14:59:57.132380352Z"
+    },
+    {
+      "message": " WARN  Failed to create bin at /app/artifacts/faceufsc/node_modules/.bin/jiti. ENOENT: no such file or directory, open '/app/node_modules/.pnpm/jiti@2.7.0/node_modules/jiti/lib/jiti-cli.mjs'\n",
+      "timestamp": "2026-06-28T14:59:57.14029644Z"
+    },
+    {
+      "message": " WARN  Failed to create bin at /app/artifacts/faceufsc/node_modules/.bin/yaml. ENOENT: no such file or directory, open '/app/node_modules/.pnpm/yaml@2.9.0/node_modules/yaml/bin.mjs'\n WARN  Failed to create bin at /app/artifacts/faceufsc/node_modules/.bin/tsx. ENOENT: no such file or directory, open '/app/node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/cli.mjs'\n",
+      "timestamp": "2026-06-28T14:59:57.140649359Z"
+    },
+    {
+      "message": " WARN  Failed to create bin at /app/artifacts/mockup-sandbox/node_modules/.bin/yaml. ENOENT: no such file or directory, open '/app/node_modules/.pnpm/yaml@2.9.0/node_modules/yaml/bin.mjs'\n",
+      "timestamp": "2026-06-28T14:59:57.141191432Z"
+    },
+    {
+      "message": " WARN  Failed to create bin at /app/artifacts/mockup-sandbox/node_modules/.bin/tsx. ENOENT: no such file or directory, open '/app/node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/cli.mjs'\n",
+      "timestamp": "2026-06-28T14:59:57.141254718Z"
+    },
+    {
+      "message": " WARN  Failed to create bin at /app/artifacts/mockup-sandbox/node_modules/.bin/jiti. ENOENT: no such file or directory, open '/app/node_modules/.pnpm/jiti@2.7.0/node_modules/jiti/lib/jiti-cli.mjs'\n",
+      "timestamp": "2026-06-28T14:59:57.141335399Z"
+    },
+    {
+      "message": " WARN  Failed to create bin at /app/lib/api-spec/node_modules/.bin/tsc. ENOENT: no such file or directory, open '/app/node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/bin/tsc'\n",
+      "timestamp": "2026-06-28T14:59:57.141519174Z"
+    },
+    {
+      "message": " WARN  Failed to create bin at /app/lib/api-spec/node_modules/.bin/tsserver. ENOENT: no such file or directory, open '/app/node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/bin/tsserver'\n",
+      "timestamp": "2026-06-28T14:59:57.141604172Z"
+    },
+    {
+      "message": " WARN  Failed to create bin at /app/lib/api-spec/node_modules/.bin/prettier. ENOENT: no such file or directory, open '/app/node_modules/.pnpm/prettier@3.8.4/node_modules/prettier/bin/prettier.cjs'\n",
+      "timestamp": "2026-06-28T14:59:57.141678914Z"
+    },
+    {
+      "message": ". preinstall$ sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'\n",
+      "timestamp": "2026-06-28T14:59:57.307768924Z"
+    },
+    {
+      "message": ". preinstall: Done\n",
+      "timestamp": "2026-06-28T14:59:57.357523235Z"
+    },
+    {
+      "message": "\ndevDependencies: skipped because NODE_ENV is set to production\n\n",
+      "timestamp": "2026-06-28T14:59:57.368100115Z"
+    },
+    {
+      "message": " WARN  Issues with peer dependencies found\nartifacts/api-server\n└─┬ esbuild-plugin-pino 2.3.3\n  └── ✕ unmet peer esbuild@\">=0.25.0 <=0.25.8\": found 0.27.3\n\n",
+      "timestamp": "2026-06-28T14:59:57.370186105Z"
+    },
+    {
+      "message": "Done in 3.7s using pnpm v9.15.9\n",
+      "timestamp": "2026-06-28T14:59:57.518978712Z"
+    },
+    {
+      "message": "\n> @workspace/api-server@0.0.0 build /app/artifacts/api-server\n> node ./build.mjs\n\n",
+      "timestamp": "2026-06-28T14:59:58.111843232Z"
+    },
+    {
+      "message": "node:internal/errors:496\n    ErrorCaptureStackTrace(err);\n    ^\n\nError [ERR_MODULE_NOT_FOUND]: Cannot find package 'esbuild' imported from /app/artifacts/api-server/build.mjs\n    at new NodeError (node:internal/errors:405:5)\n    at packageResolve (node:internal/modules/esm/resolve:916:9)\n    at moduleResolve (node:internal/modules/esm/resolve:973:20)\n    at defaultResolve (node:internal/modules/esm/resolve:1206:11)\n    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:404:12)\n    at ModuleLoader.resolve (node:internal/modules/esm/loader:373:25)\n    at ModuleLoader.getModuleJob (node:internal/modules/esm/loader:250:38)\n    at ModuleWrap.<anonymous> (node:internal/modules/esm/module_job:76:39)\n    at link (node:internal/modules/esm/module_job:75:36) {\n  code: 'ERR_MODULE_NOT_FOUND'\n}\n\nNode.js v18.20.5\n",
+      "timestamp": "2026-06-28T14:59:58.154980966Z"
+    },
+    {
+      "message": "/app/artifacts/api-server:\n ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @workspace/api-server@0.0.0 build: `node ./build.mjs`\nExit status 1\n",
+      "timestamp": "2026-06-28T14:59:58.163147639Z"
+    }
+  ]
+}

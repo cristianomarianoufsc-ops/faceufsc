@@ -1,0 +1,137 @@
+You reached the start of the range
+Jun 28, 2026, 11:54 AM
+unpacking archive
+5.9 MB
+50ms
+using build driver nixpacks-v1.41.0
+uploading snapshot
+4.9 MB
+79ms
+ 
+╔══════════════════════════════ Nixpacks v1.41.0 ══════════════════════════════╗
+║ setup      │ nodejs_18, pnpm-9_x, openssl                                    ║
+║──────────────────────────────────────────────────────────────────────────────║
+║ install    │ pnpm install --no-frozen-lockfile                               ║
+║──────────────────────────────────────────────────────────────────────────────║
+║ build      │ pnpm install --no-frozen-lockfile && pnpm --filter              ║
+║            │ @workspace/api-server run build                                 ║
+║──────────────────────────────────────────────────────────────────────────────║
+║ start      │ node artifacts/api-server/dist/index.mjs                        ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+ 
+ 
+Saved output to:
+  snapshot-target-unpack
+
+internal
+load build definition from Dockerfile
+0ms
+
+internal
+load metadata for ghcr.io/railwayapp/nixpacks:ubuntu-1745885067
+741ms
+
+internal
+load .dockerignore
+0ms
+SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "SESSION_SECRET") (line 11)(https://docs.docker.com/go/dockerfile/rule/secrets-used-in-arg-or-env/)
+ details: Sensitive data should not be used in the ARG or ENV commands
+SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "SESSION_SECRET") (line 12)(https://docs.docker.com/go/dockerfile/rule/secrets-used-in-arg-or-env/)
+ details: Sensitive data should not be used in the ARG or ENV commands
+UndefinedVar: Usage of undefined variable '$NIXPACKS_PATH' (line 18)(https://docs.docker.com/go/dockerfile/rule/undefined-var/)
+ details: Variables should be defined before their use
+
+stage-0
+FROM ghcr.io/railwayapp/nixpacks:ubuntu-1745885067@sha256:d45c89d80e13d7ad0fd555b5130f22a866d9dd10e861f589932303ef2314c7de
+16ms
+
+internal
+load build context
+0ms
+
+stage-0
+RUN nix-env -if .nixpacks/nixpkgs-ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7.nix && nix-collect-garbage -d cached
+0ms
+
+stage-0
+COPY .nixpacks/nixpkgs-ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7.nix .nixpacks/nixpkgs-ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7.nix cached
+0ms
+
+stage-0
+WORKDIR /app/ cached
+0ms
+
+stage-0
+COPY . /app/.
+525ms
+scheduling build on Metal builder "builder-elcwto"
+
+stage-0
+RUN pnpm install --no-frozen-lockfile
+8s
+Done in 7.5s using pnpm v9.15.9
+
+stage-0
+COPY . /app/.
+288ms
+
+stage-0
+RUN pnpm install --no-frozen-lockfile && pnpm --filter @workspace/api-server run build
+5s
+Scope: all 10 workspace projects
+Progress: resolved 1, reused 0, downloaded 0, added 0
+artifacts/api-server                     |  WARN  deprecated @types/bcryptjs@3.0.0
+artifacts/faceufsc                       |  WARN  deprecated recharts@2.15.4
+Progress: resolved 96, reused 0, downloaded 96, added 0
+Progress: resolved 606, reused 0, downloaded 478, added 0
+ WARN  4 deprecated subdependencies found: @esbuild-kit/core-utils@3.3.2, @esbuild-kit/esm-loader@2.6.5, node-domexception@1.0.0, uuid@9.0.1
+Already up to date
+Progress: resolved 744, reused 0, downloaded 603, added 0, done
+ WARN  Failed to create bin at /app/artifacts/faceufsc/node_modules/.bin/jiti. ENOENT: no such file or directory, open '/app/node_modules/.pnpm/jiti@2.7.0/node_modules/jiti/lib/jiti-cli.mjs'
+
+ WARN  Failed to create bin at /app/artifacts/faceufsc/node_modules/.bin/yaml. ENOENT: no such file or directory, open '/app/node_modules/.pnpm/yaml@2.9.0/node_modules/yaml/bin.mjs'
+
+ WARN  Failed to create bin at /app/artifacts/faceufsc/node_modules/.bin/tsx. ENOENT: no such file or directory, open '/app/node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/cli.mjs'
+
+ WARN  Failed to create bin at /app/artifacts/mockup-sandbox/node_modules/.bin/yaml. ENOENT: no such file or directory, open '/app/node_modules/.pnpm/yaml@2.9.0/node_modules/yaml/bin.mjs'
+
+ WARN  Failed to create bin at /app/artifacts/mockup-sandbox/node_modules/.bin/tsx. ENOENT: no such file or directory, open '/app/node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/cli.mjs'
+
+ WARN  Failed to create bin at /app/artifacts/mockup-sandbox/node_modules/.bin/jiti. ENOENT: no such file or directory, open '/app/node_modules/.pnpm/jiti@2.7.0/node_modules/jiti/lib/jiti-cli.mjs'
+
+ WARN  Failed to create bin at /app/lib/api-spec/node_modules/.bin/tsc. ENOENT: no such file or directory, open '/app/node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/bin/tsc'
+
+ WARN  Failed to create bin at /app/lib/api-spec/node_modules/.bin/tsserver. ENOENT: no such file or directory, open '/app/node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/bin/tsserver'
+
+ WARN  Failed to create bin at /app/lib/api-spec/node_modules/.bin/prettier. ENOENT: no such file or directory, open '/app/node_modules/.pnpm/prettier@3.8.4/node_modules/prettier/bin/prettier.cjs'
+
+. preinstall$ sh -c 'rm -f package-lock.json yarn.lock; case "$npm_config_user_agent" in pnpm/*) ;; *) echo "Use pnpm instead" >&2; exit 1 ;; esac'
+. preinstall: Done
+devDependencies: skipped because NODE_ENV is set to production
+ WARN  Issues with peer dependencies found
+artifacts/api-server
+└─┬ esbuild-plugin-pino 2.3.3
+  └── ✕ unmet peer esbuild@">=0.25.0 <=0.25.8": found 0.27.3
+Done in 3.7s using pnpm v9.15.9
+> @workspace/api-server@0.0.0 build /app/artifacts/api-server
+> node ./build.mjs
+node:internal/errors:496
+    ErrorCaptureStackTrace(err);
+    ^
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'esbuild' imported from /app/artifacts/api-server/build.mjs
+    at new NodeError (node:internal/errors:405:5)
+    at packageResolve (node:internal/modules/esm/resolve:916:9)
+    at moduleResolve (node:internal/modules/esm/resolve:973:20)
+    at defaultResolve (node:internal/modules/esm/resolve:1206:11)
+    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:404:12)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:373:25)
+    at ModuleLoader.getModuleJob (node:internal/modules/esm/loader:250:38)
+    at ModuleWrap.<anonymous> (node:internal/modules/esm/module_job:76:39)
+    at link (node:internal/modules/esm/module_job:75:36) {
+  code: 'ERR_MODULE_NOT_FOUND'
+}
+Node.js v18.20.5
+/app/artifacts/api-server:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @workspace/api-server@0.0.0 build: `node ./build.mjs`
+Exit status 1
+Build Failed: build daemon returned an error < failed to solve: process "/bin/bash -ol pipefail -c pnpm install --no-frozen-lockfile && pnpm --filter @workspace/api-server run build" did not complete successfully: exit code: 1 >

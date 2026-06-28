@@ -6,6 +6,7 @@ import communitiesRouter from "./communities";
 import eventsRouter from "./events";
 import feedRouter from "./feed";
 import authRouter from "./auth";
+import storageRouter from "./storage";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(postsRouter);
 router.use(communitiesRouter);
 router.use(eventsRouter);
 router.use(feedRouter);
+router.use(storageRouter);
 
 export default router;

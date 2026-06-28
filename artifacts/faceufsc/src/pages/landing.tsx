@@ -23,8 +23,12 @@ const loginSchema = z.object({
   password: z.string().min(6, { message: "A senha deve ter pelo menos 6 caracteres." }),
 });
 
+const ALLOWED_DOMAINS = ["@ufsc.br", "@grad.ufsc.br", "@posgrad.ufsc.br", "@servidor.ufsc.br"];
+
 export default function Landing() {
   const [tab, setTab] = useState<"login" | "register">("login");
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { login, register } = useAuth();
@@ -34,17 +38,32 @@ export default function Landing() {
     defaultValues: { email: "", password: "" },
   });
 
-  const [regName, setRegName] = useState("");
-  const [regEmail, setRegEmail] = useState("");
-  const [regPassword, setRegPassword] = useState("");
-  const [regRole, setRegRole] = useState("student");
-  const [regEntryYear, setRegEntryYear] = useState(new Date().getFullYear().toString());
-  const [regCourse, setRegCourse] = useState("");
-  const [regDepartment, setRegDepartment] = useState("");
-  const [regLoading, setRegLoading] = useState(false);
+  const [reg, setReg] = useState({
+    name: "", email: "", password: "", course: "",
+    department: "", entryYear: String(new Date().getFullYear()), role: "student",
+  });
   const [regErrors, setRegErrors] = useState<Record<string, string>>({});
-  const [showLoginPassword, setShowLoginPassword] = useState(false);
-  const [showRegPassword, setShowRegPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  function handleRegChange(field: keyof typeof reg) {
+    return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+      setReg(prev => ({ ...prev, [field]: e.target.value }));
+      if (regErrors[field]) setRegErrors(prev => ({ ...prev, [field]: "" }));
+    };
+  }
+
+  function validateReg() {
+    const errs: Record<string, string> = {};
+    if (reg.name.trim().length < 3) errs.name = "Nome deve ter pelo menos 3 caracteres.";
+    if (!reg.email.includes("@")) errs.email = "Insira um e-mail válido.";
+    else if (!ALLOWED_DOMAINS.some(d => reg.email.endsWith(d)))
+      errs.email = "Use um e-mail institucional da UFSC.";
+    if (reg.password.length < 6) errs.password = "A senha deve ter pelo menos 6 caracteres.";
+    if (reg.course.trim().length < 2) errs.course = "Informe seu curso ou área.";
+    if (reg.department.trim().length < 2) errs.department = "Informe seu departamento.";
+    if (reg.entryYear.length < 4) errs.entryYear = "Informe o ano de ingresso.";
+    return errs;
+  }
 
   async function onLogin(values: z.infer<typeof loginSchema>) {
     try {
@@ -55,29 +74,22 @@ export default function Landing() {
     }
   }
 
-  async function onRegister(e: React.FormEvent) {
+  async function onRegisterSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const errors: Record<string, string> = {};
-    if (regName.trim().length < 3) errors.name = "Nome deve ter pelo menos 3 caracteres.";
-    if (!regEmail.includes("@")) errors.email = "Insira um e-mail válido.";
-    else if (!["@ufsc.br", "@grad.ufsc.br", "@posgrad.ufsc.br", "@servidor.ufsc.br"].some(d => regEmail.endsWith(d)))
-      errors.email = "Use um e-mail institucional da UFSC.";
-    if (regPassword.length < 6) errors.password = "A senha deve ter pelo menos 6 caracteres.";
-    if (regCourse.trim().length < 2) errors.course = "Informe seu curso ou área.";
-    if (regDepartment.trim().length < 2) errors.department = "Informe seu departamento.";
-    if (regEntryYear.length < 4) errors.entryYear = "Informe o ano de ingresso.";
-    setRegErrors(errors);
-    if (Object.keys(errors).length > 0) return;
-    setRegLoading(true);
+    const errs = validateReg();
+    if (Object.keys(errs).length > 0) { setRegErrors(errs); return; }
+    setSubmitting(true);
     try {
-      await register({ name: regName, email: regEmail, password: regPassword, role: regRole, entryYear: regEntryYear, course: regCourse, department: regDepartment });
+      await register(reg);
       setLocation("/feed");
     } catch (err: any) {
       toast({ title: "Erro ao cadastrar", description: err.message, variant: "destructive" });
     } finally {
-      setRegLoading(false);
+      setSubmitting(false);
     }
   }
+
+  const inputClass = "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm text-foreground";
 
   return (
     <div className="min-h-[100dvh] flex flex-col md:flex-row">
@@ -116,8 +128,13 @@ export default function Landing() {
         </motion.div>
       </div>
 
-      <div className="flex-1 bg-background flex flex-col justify-start px-8 py-12 md:px-16 lg:px-24 items-center overflow-y-auto">
-        <div className="w-full max-w-md space-y-6">
+      <div className="flex-1 bg-background flex flex-col px-8 py-12 md:px-16 lg:px-24 items-center overflow-y-auto">
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="w-full max-w-md space-y-6 my-auto"
+        >
           <div className="flex rounded-xl border border-border overflow-hidden">
             <button
               onClick={() => setTab("login")}
@@ -160,14 +177,25 @@ export default function Landing() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Senha</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Input type={showLoginPassword ? "text" : "password"} placeholder="••••••••" autoComplete="current-password" className="pr-10" {...field} />
-                            <button type="button" onClick={() => setShowLoginPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                              {showLoginPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </button>
-                          </div>
-                        </FormControl>
+                        <div className="relative">
+                          <FormControl>
+                            <Input
+                              type={showLoginPassword ? "text" : "password"}
+                              placeholder="••••••••"
+                              autoComplete="current-password"
+                              className="pr-10"
+                              {...field}
+                            />
+                          </FormControl>
+                          <button
+                            type="button"
+                            onClick={() => setShowLoginPassword(v => !v)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                            tabIndex={-1}
+                          >
+                            {showLoginPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -190,49 +218,62 @@ export default function Landing() {
                 <h2 className="text-2xl font-bold tracking-tight text-foreground">Criar conta</h2>
                 <p className="text-muted-foreground text-sm mt-1">Use seu e-mail institucional da UFSC</p>
               </div>
-              <form onSubmit={onRegister} className="space-y-4">
-                <div className="space-y-2">
+              <form onSubmit={onRegisterSubmit} className="space-y-4">
+                <div className="space-y-1">
                   <label className="text-sm font-medium text-foreground">Nome completo</label>
-                  <Input
-                    value={regName}
-                    onChange={e => setRegName(e.target.value)}
+                  <input
+                    className={inputClass}
                     placeholder="Seu nome completo"
+                    autoComplete="name"
+                    value={reg.name}
+                    onChange={handleRegChange("name")}
                   />
-                  {regErrors.name && <p className="text-xs font-medium text-destructive">{regErrors.name}</p>}
+                  {regErrors.name && <p className="text-sm font-medium text-destructive">{regErrors.name}</p>}
                 </div>
-                <div className="space-y-2">
+
+                <div className="space-y-1">
                   <label className="text-sm font-medium text-foreground">E-mail UFSC</label>
-                  <Input
-                    type="email"
-                    value={regEmail}
-                    onChange={e => setRegEmail(e.target.value)}
+                  <input
+                    className={inputClass}
                     placeholder="matricula@grad.ufsc.br"
+                    autoComplete="email"
+                    type="email"
+                    value={reg.email}
+                    onChange={handleRegChange("email")}
                   />
-                  {regErrors.email && <p className="text-xs font-medium text-destructive">{regErrors.email}</p>}
+                  {regErrors.email && <p className="text-sm font-medium text-destructive">{regErrors.email}</p>}
                 </div>
-                <div className="space-y-2">
+
+                <div className="space-y-1">
                   <label className="text-sm font-medium text-foreground">Senha</label>
                   <div className="relative">
-                    <Input
-                      type={showRegPassword ? "text" : "password"}
-                      value={regPassword}
-                      onChange={e => setRegPassword(e.target.value)}
+                    <input
+                      className={inputClass + " pr-10"}
                       placeholder="••••••••"
-                      className="pr-10"
+                      autoComplete="new-password"
+                      type={showRegisterPassword ? "text" : "password"}
+                      value={reg.password}
+                      onChange={handleRegChange("password")}
                     />
-                    <button type="button" onClick={() => setShowRegPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                      {showRegPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    <button
+                      type="button"
+                      onClick={() => setShowRegisterPassword(v => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      tabIndex={-1}
+                    >
+                      {showRegisterPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
-                  {regErrors.password && <p className="text-xs font-medium text-destructive">{regErrors.password}</p>}
+                  {regErrors.password && <p className="text-sm font-medium text-destructive">{regErrors.password}</p>}
                 </div>
+
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <label className="text-sm font-medium text-foreground">Vínculo</label>
                     <select
-                      value={regRole}
-                      onChange={e => setRegRole(e.target.value)}
-                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring text-foreground"
+                      className={inputClass}
+                      value={reg.role}
+                      onChange={handleRegChange("role")}
                     >
                       <option value="student">Estudante</option>
                       <option value="professor">Professor</option>
@@ -240,37 +281,43 @@ export default function Landing() {
                       <option value="alumni">Egresso</option>
                     </select>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <label className="text-sm font-medium text-foreground">Ano de ingresso</label>
-                    <Input
-                      value={regEntryYear}
-                      onChange={e => setRegEntryYear(e.target.value)}
+                    <input
+                      className={inputClass}
                       placeholder="2024"
                       maxLength={4}
+                      value={reg.entryYear}
+                      onChange={handleRegChange("entryYear")}
                     />
-                    {regErrors.entryYear && <p className="text-xs font-medium text-destructive">{regErrors.entryYear}</p>}
+                    {regErrors.entryYear && <p className="text-sm font-medium text-destructive">{regErrors.entryYear}</p>}
                   </div>
                 </div>
-                <div className="space-y-2">
+
+                <div className="space-y-1">
                   <label className="text-sm font-medium text-foreground">Curso / Área</label>
-                  <Input
-                    value={regCourse}
-                    onChange={e => setRegCourse(e.target.value)}
+                  <input
+                    className={inputClass}
                     placeholder="ex: Ciência da Computação"
+                    value={reg.course}
+                    onChange={handleRegChange("course")}
                   />
-                  {regErrors.course && <p className="text-xs font-medium text-destructive">{regErrors.course}</p>}
+                  {regErrors.course && <p className="text-sm font-medium text-destructive">{regErrors.course}</p>}
                 </div>
-                <div className="space-y-2">
+
+                <div className="space-y-1">
                   <label className="text-sm font-medium text-foreground">Departamento / Centro</label>
-                  <Input
-                    value={regDepartment}
-                    onChange={e => setRegDepartment(e.target.value)}
+                  <input
+                    className={inputClass}
                     placeholder="ex: INE - CTC"
+                    value={reg.department}
+                    onChange={handleRegChange("department")}
                   />
-                  {regErrors.department && <p className="text-xs font-medium text-destructive">{regErrors.department}</p>}
+                  {regErrors.department && <p className="text-sm font-medium text-destructive">{regErrors.department}</p>}
                 </div>
-                <Button type="submit" className="w-full" size="lg" disabled={regLoading}>
-                  {regLoading ? "Cadastrando..." : "Criar conta"}
+
+                <Button type="submit" className="w-full" size="lg" disabled={submitting}>
+                  {submitting ? "Cadastrando..." : "Criar conta"}
                 </Button>
               </form>
               <p className="text-center text-xs text-muted-foreground">
@@ -281,7 +328,7 @@ export default function Landing() {
               </p>
             </div>
           )}
-        </div>
+        </motion.div>
       </div>
     </div>
   );
