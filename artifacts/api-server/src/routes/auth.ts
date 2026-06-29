@@ -9,12 +9,22 @@ import { signToken, verifyToken, extractToken } from "../lib/jwt";
 
 const router = Router();
 
+const GMAIL_USER = process.env.GMAIL_USER;
+const GMAIL_PASS = process.env.GMAIL_APP_PASSWORD;
+
+if (!GMAIL_USER || !GMAIL_PASS) {
+  console.error("FATAL: GMAIL_USER and GMAIL_APP_PASSWORD environment variables are required");
+}
+
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD,
+    user: GMAIL_USER,
+    pass: GMAIL_PASS,
   },
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 15000,
 });
 
 const ALLOWED_DOMAINS = ["@ufsc.br", "@grad.ufsc.br", "@posgrad.ufsc.br", "@servidor.ufsc.br"];
@@ -30,6 +40,11 @@ function getAppUrl(req: import("express").Request): string {
 
 router.post("/auth/register", async (req, res): Promise<void> => {
   try {
+    if (!GMAIL_USER || !GMAIL_PASS) {
+      res.status(500).json({ error: "Serviço de email não configurado. Contate o administrador." });
+      return;
+    }
+
     const { name, email, password, course, department, entryYear, role } = req.body;
 
     if (!name || !email || !password || !course || !department || !entryYear) {
@@ -66,7 +81,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
     const verifyUrl = `${appUrl}/verify-email?token=${token}`;
 
     await transporter.sendMail({
-      from: `"FaceUFSC" <${process.env.GMAIL_USER}>`,
+      from: `"FaceUFSC" <${GMAIL_USER}>`,
       to: email,
       subject: "Confirme seu e-mail — FaceUFSC",
       html: `
