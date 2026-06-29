@@ -115,7 +115,7 @@ export default function Landing() {
           </div>
           <div className="pt-2 space-y-3">
             <p className="text-xs text-muted-foreground">
-              Não recebeu?{" "}
+              Não recebeu? Verifique também as pastas de <strong>Spam</strong> ou <strong>Filtrados</strong>.{" "}
               <button
                 className="text-primary underline"
                 onClick={() => { setPendingEmail(null); setTab("register"); }}
