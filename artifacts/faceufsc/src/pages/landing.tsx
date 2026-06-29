@@ -31,6 +31,7 @@ export default function Landing() {
   const [tab, setTab] = useState<"login" | "register">("login");
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { login, register } = useAuth();
@@ -83,7 +84,7 @@ export default function Landing() {
     setSubmitting(true);
     try {
       await register(reg);
-      setLocation("/feed");
+      setPendingEmail(reg.email);
     } catch (err: any) {
       toast({ title: "Erro ao cadastrar", description: err.message, variant: "destructive" });
     } finally {
@@ -92,6 +93,47 @@ export default function Landing() {
   }
 
   const inputClass = "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm text-foreground";
+
+  if (pendingEmail) {
+    return (
+      <div className="min-h-[100dvh] flex items-center justify-center bg-background px-4">
+        <div className="max-w-md w-full text-center space-y-6">
+          <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+            <svg className="h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-foreground">Verifique seu e-mail</h2>
+            <p className="text-muted-foreground text-sm mt-3 leading-relaxed">
+              Enviamos um link de confirmação para<br />
+              <strong className="text-foreground">{pendingEmail}</strong>
+            </p>
+            <p className="text-muted-foreground text-sm mt-3">
+              Clique no link no e-mail para criar sua conta. O link expira em 24 horas.
+            </p>
+          </div>
+          <div className="pt-2 space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Não recebeu?{" "}
+              <button
+                className="text-primary underline"
+                onClick={() => { setPendingEmail(null); setTab("register"); }}
+              >
+                Tentar novamente
+              </button>
+            </p>
+            <button
+              className="text-xs text-muted-foreground underline"
+              onClick={() => { setPendingEmail(null); setTab("login"); }}
+            >
+              Voltar para o login
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[100dvh] flex flex-col md:flex-row">
