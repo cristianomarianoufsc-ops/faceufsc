@@ -12,6 +12,7 @@ import Events from "@/pages/events";
 import EventDetail from "@/pages/event-detail";
 import People from "@/pages/people";
 import Profile from "@/pages/profile";
+import VerifyEmail from "@/pages/verify-email";
 import { ComponentType } from "react";
 
 const queryClient = new QueryClient({
@@ -78,6 +79,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={AuthLandingRoute} />
+      <Route path="/verify-email" component={VerifyEmail} />
       <Route path="/feed" component={ProtectedFeedRoute} />
       <Route path="/communities" component={ProtectedCommunitiesRoute} />
       <Route path="/communities/:id" component={ProtectedCommunityDetailRoute} />

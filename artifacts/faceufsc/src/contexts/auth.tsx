@@ -19,9 +19,10 @@ interface AuthContextType {
   loading: boolean;
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (data: RegisterData) => Promise<void>;
+  register: (data: RegisterData) => Promise<{ pendingVerification: true; email: string }>;
   logout: () => Promise<void>;
   updateAvatar: (avatarUrl: string) => void;
+  loginWithData: (data: AuthUser & { token: string }) => void;
 }
 
 interface RegisterData {
@@ -69,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(data);
   }
 
-  async function register(data: RegisterData) {
+  async function register(data: RegisterData): Promise<{ pendingVerification: true; email: string }> {
     const r = await fetch(`${API_BASE}/api/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -77,9 +78,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     const body = await r.json();
     if (!r.ok) throw new Error(body.error || "Erro ao cadastrar");
-    localStorage.setItem(TOKEN_KEY, body.token);
-    setToken(body.token);
-    setUser(body);
+    return { pendingVerification: true, email: data.email };
+  }
+
+  function loginWithData(data: AuthUser & { token: string }) {
+    localStorage.setItem(TOKEN_KEY, data.token);
+    setToken(data.token);
+    setUser(data);
   }
 
   async function logout() {
@@ -93,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, token, login, register, logout, updateAvatar }}>
+    <AuthContext.Provider value={{ user, loading, token, login, register, logout, updateAvatar, loginWithData }}>
       {children}
     </AuthContext.Provider>
   );
