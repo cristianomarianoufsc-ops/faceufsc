@@ -1,14 +1,21 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import { db } from "@workspace/db";
 import { usersTable, emailVerificationsTable } from "@workspace/db";
 import { eq, lt } from "drizzle-orm";
 import { signToken, verifyToken, extractToken } from "../lib/jwt";
 
 const router = Router();
-const resend = new Resend(process.env.RESEND_API_KEY);
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASSWORD,
+  },
+});
 
 const ALLOWED_DOMAINS = ["@ufsc.br", "@grad.ufsc.br", "@posgrad.ufsc.br", "@servidor.ufsc.br"];
 const VERIFY_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
@@ -58,8 +65,8 @@ router.post("/auth/register", async (req, res): Promise<void> => {
     const appUrl = getAppUrl(req);
     const verifyUrl = `${appUrl}/verify-email?token=${token}`;
 
-    await resend.emails.send({
-      from: "FaceUFSC <onboarding@resend.dev>",
+    await transporter.sendMail({
+      from: `"FaceUFSC" <${process.env.GMAIL_USER}>`,
       to: email,
       subject: "Confirme seu e-mail — FaceUFSC",
       html: `
