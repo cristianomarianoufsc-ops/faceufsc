@@ -5,6 +5,7 @@ import { db } from "@workspace/db";
 import { usersTable, emailVerificationsTable } from "@workspace/db";
 import { eq, lt } from "drizzle-orm";
 import { signToken, verifyToken, extractToken } from "../lib/jwt";
+import { getSetting } from "./admin";
 
 const router = Router();
 
@@ -12,7 +13,7 @@ const BREVO_API_KEY = process.env.BREVO_API_KEY;
 const GMAIL_USER = process.env.GMAIL_USER ?? "faceufsc@gmail.com";
 
 if (!BREVO_API_KEY) {
-  console.error("FATAL: BREVO_API_KEY environment variable is required");
+  console.error("WARN: BREVO_API_KEY não configurada — verificação de email desativada automaticamente");
 }
 
 async function sendVerificationEmail(to: string, name: string, verifyUrl: string): Promise<void> {
@@ -69,11 +70,6 @@ function getAppUrl(req: import("express").Request): string {
 
 router.post("/auth/register", async (req, res): Promise<void> => {
   try {
-    if (!BREVO_API_KEY) {
-      res.status(500).json({ error: "Serviço de email não configurado. Contate o administrador." });
-      return;
-    }
-
     const { name, email, password, course, department, entryYear, role } = req.body;
 
     if (!name || !email || !password || !course || !department || !entryYear) {
@@ -92,8 +88,44 @@ router.post("/auth/register", async (req, res): Promise<void> => {
       return;
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    // Verificar se verificação de email está ativada no painel admin
+    const emailVerificationEnabled = await getSetting("email_verification_enabled", "true");
 
+    if (emailVerificationEnabled !== "true" || !BREVO_API_KEY) {
+      // Cadastro direto sem verificação de email
+      const passwordHash = await bcrypt.hash(password, 10);
+      const [user] = await db.insert(usersTable).values({
+        name,
+        email,
+        passwordHash,
+        course,
+        department,
+        entryYear: parseInt(entryYear),
+        role: role || "student",
+        skills: "[]",
+        connectionsCount: 0,
+        communitiesCount: 0,
+      }).returning();
+
+      const token = signToken(user.id);
+      res.status(201).json({
+        token,
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        course: user.course,
+        department: user.department,
+        role: user.role,
+        entryYear: user.entryYear,
+        skills: [],
+        connectionsCount: 0,
+        communitiesCount: 0,
+      });
+      return;
+    }
+
+    // Fluxo com verificação de email
+    const passwordHash = await bcrypt.hash(password, 10);
     await db.delete(emailVerificationsTable).where(eq(emailVerificationsTable.email, email));
 
     const token = crypto.randomBytes(32).toString("hex");
