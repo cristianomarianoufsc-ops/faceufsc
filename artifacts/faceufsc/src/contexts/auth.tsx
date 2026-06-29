@@ -19,7 +19,7 @@ interface AuthContextType {
   loading: boolean;
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (data: RegisterData) => Promise<{ pendingVerification: true; email: string }>;
+  register: (data: RegisterData) => Promise<{ pendingVerification: boolean; email: string }>;
   logout: () => Promise<void>;
   updateAvatar: (avatarUrl: string) => void;
   loginWithData: (data: AuthUser & { token: string }) => void;
@@ -70,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(data);
   }
 
-  async function register(data: RegisterData): Promise<{ pendingVerification: true; email: string }> {
+  async function register(data: RegisterData): Promise<{ pendingVerification: boolean; email: string }> {
     const r = await fetch(`${API_BASE}/api/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -78,6 +78,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     const body = await r.json();
     if (!r.ok) throw new Error(body.error || "Erro ao cadastrar");
+    // Se o backend retornou um token, verificação está desativada — faz login direto
+    if (body.token) {
+      localStorage.setItem(TOKEN_KEY, body.token);
+      setToken(body.token);
+      setUser(body);
+      return { pendingVerification: false, email: data.email };
+    }
     return { pendingVerification: true, email: data.email };
   }
 

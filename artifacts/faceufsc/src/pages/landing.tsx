@@ -83,8 +83,12 @@ export default function Landing() {
     if (Object.keys(errs).length > 0) { setRegErrors(errs); return; }
     setSubmitting(true);
     try {
-      await register(reg);
-      setPendingEmail(reg.email);
+      const result = await register(reg);
+      if (result.pendingVerification) {
+        setPendingEmail(reg.email);
+      } else {
+        setLocation('/feed');
+      }
     } catch (err: any) {
       toast({ title: "Erro ao cadastrar", description: err.message, variant: "destructive" });
     } finally {
