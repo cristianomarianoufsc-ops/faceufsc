@@ -3,6 +3,145 @@ export interface UfscCourse {
   department: string;
 }
 
+export interface DepartmentConfig {
+  label: string;
+  bg: string;
+  text: string;
+  border: string;
+  badgeBg: string;
+  badgeText: string;
+  icon: string;
+}
+
+export const DEPARTMENT_CONFIG: Record<string, DepartmentConfig> = {
+  CCE: {
+    label: "CCE — Comunicação e Expressão",
+    bg: "bg-purple-50",
+    text: "text-purple-700",
+    border: "border-purple-200",
+    badgeBg: "bg-purple-100",
+    badgeText: "text-purple-700",
+    icon: "Palette",
+  },
+  CCB: {
+    label: "CCB — Ciências Biológicas",
+    bg: "bg-green-50",
+    text: "text-green-700",
+    border: "border-green-200",
+    badgeBg: "bg-green-100",
+    badgeText: "text-green-700",
+    icon: "Microscope",
+  },
+  CCJ: {
+    label: "CCJ — Ciências Jurídicas",
+    bg: "bg-blue-50",
+    text: "text-blue-800",
+    border: "border-blue-200",
+    badgeBg: "bg-blue-100",
+    badgeText: "text-blue-800",
+    icon: "Scale",
+  },
+  CCS: {
+    label: "CCS — Ciências da Saúde",
+    bg: "bg-red-50",
+    text: "text-red-700",
+    border: "border-red-200",
+    badgeBg: "bg-red-100",
+    badgeText: "text-red-700",
+    icon: "HeartPulse",
+  },
+  CDS: {
+    label: "CDS — Centro de Desportos",
+    bg: "bg-orange-50",
+    text: "text-orange-700",
+    border: "border-orange-200",
+    badgeBg: "bg-orange-100",
+    badgeText: "text-orange-700",
+    icon: "Trophy",
+  },
+  CED: {
+    label: "CED — Ciências da Educação",
+    bg: "bg-amber-50",
+    text: "text-amber-700",
+    border: "border-amber-200",
+    badgeBg: "bg-amber-100",
+    badgeText: "text-amber-700",
+    icon: "GraduationCap",
+  },
+  CFH: {
+    label: "CFH — Filosofia e Ciências Humanas",
+    bg: "bg-indigo-50",
+    text: "text-indigo-700",
+    border: "border-indigo-200",
+    badgeBg: "bg-indigo-100",
+    badgeText: "text-indigo-700",
+    icon: "Brain",
+  },
+  CFM: {
+    label: "CFM — Ciências Físicas e Matemáticas",
+    bg: "bg-cyan-50",
+    text: "text-cyan-700",
+    border: "border-cyan-200",
+    badgeBg: "bg-cyan-100",
+    badgeText: "text-cyan-700",
+    icon: "Atom",
+  },
+  CSE: {
+    label: "CSE — Centro Socioeconômico",
+    bg: "bg-teal-50",
+    text: "text-teal-700",
+    border: "border-teal-200",
+    badgeBg: "bg-teal-100",
+    badgeText: "text-teal-700",
+    icon: "TrendingUp",
+  },
+  CTC: {
+    label: "CTC — Centro Tecnológico",
+    bg: "bg-sky-50",
+    text: "text-sky-700",
+    border: "border-sky-200",
+    badgeBg: "bg-sky-100",
+    badgeText: "text-sky-700",
+    icon: "Cpu",
+  },
+  ARA: {
+    label: "ARA — Campus Araranguá",
+    bg: "bg-lime-50",
+    text: "text-lime-700",
+    border: "border-lime-200",
+    badgeBg: "bg-lime-100",
+    badgeText: "text-lime-700",
+    icon: "MapPin",
+  },
+  BNU: {
+    label: "BNU — Campus Blumenau",
+    bg: "bg-rose-50",
+    text: "text-rose-700",
+    border: "border-rose-200",
+    badgeBg: "bg-rose-100",
+    badgeText: "text-rose-700",
+    icon: "MapPin",
+  },
+  CBS: {
+    label: "CBS — Campus Curitibanos",
+    bg: "bg-emerald-50",
+    text: "text-emerald-700",
+    border: "border-emerald-200",
+    badgeBg: "bg-emerald-100",
+    badgeText: "text-emerald-700",
+    icon: "TreePine",
+  },
+  JOI: {
+    label: "JOI — Campus Joinville",
+    bg: "bg-slate-50",
+    text: "text-slate-700",
+    border: "border-slate-200",
+    badgeBg: "bg-slate-100",
+    badgeText: "text-slate-700",
+    icon: "Factory",
+  },
+};
+
 export const UFSC_COURSES: UfscCourse[] = [
   // CCE — Centro de Comunicação e Expressão
   { name: "Artes Cênicas", department: "CCE" },

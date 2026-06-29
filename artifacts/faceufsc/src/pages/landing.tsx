@@ -17,7 +17,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth";
-import { CourseAutocomplete } from "@/components/course-autocomplete";
+import { CourseAutocomplete, DepartmentBadge } from "@/components/course-autocomplete";
+import { DEPARTMENT_CONFIG } from "@/data/ufsc-courses";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Insira um e-mail válido." }),
@@ -308,12 +309,18 @@ export default function Landing() {
 
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-foreground">Departamento / Centro</label>
-                  <input
-                    className={`${inputClass} cursor-default bg-muted text-muted-foreground`}
-                    placeholder="Preenchido automaticamente ao escolher o curso"
-                    value={reg.department}
-                    readOnly
-                  />
+                  {reg.department && DEPARTMENT_CONFIG[reg.department] ? (
+                    <div className={`flex items-center gap-3 px-3 py-2.5 rounded-md border ${DEPARTMENT_CONFIG[reg.department].bg} ${DEPARTMENT_CONFIG[reg.department].border}`}>
+                      <DepartmentBadge code={reg.department} />
+                      <span className={`text-sm font-medium ${DEPARTMENT_CONFIG[reg.department].text}`}>
+                        {DEPARTMENT_CONFIG[reg.department].label.replace(`${reg.department} — `, "")}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex h-9 w-full items-center rounded-md border border-input bg-muted px-3 py-1 text-sm text-muted-foreground">
+                      Preenchido automaticamente ao escolher o curso
+                    </div>
+                  )}
                   {regErrors.department && <p className="text-sm font-medium text-destructive">{regErrors.department}</p>}
                 </div>
 
