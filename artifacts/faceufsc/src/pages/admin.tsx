@@ -1,60 +1,121 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
+
+type User = {
+  id: number;
+  name: string;
+  email: string;
+  course: string;
+  department: string;
+  role: string;
+  entryYear: number;
+  createdAt: string;
+};
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
 
 export default function Admin() {
   const [password, setPassword] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
   const [authError, setAuthError] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
+
+  // Settings
   const [emailVerification, setEmailVerification] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [settingsFeedback, setSettingsFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  // Users
+  const [users, setUsers] = useState<User[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [search, setSearch] = useState("");
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<User | null>(null);
+  const [tab, setTab] = useState<"settings" | "users">("settings");
+
+  const fetchUsers = useCallback(async () => {
+    setUsersLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/users`, {
+        headers: { "x-admin-password": password },
+      });
+      const data = await res.json();
+      setUsers(data.users || []);
+    } catch {
+      setUsers([]);
+    } finally {
+      setUsersLoading(false);
+    }
+  }, [password]);
+
+  useEffect(() => {
+    if (authenticated && tab === "users") fetchUsers();
+  }, [authenticated, tab, fetchUsers]);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
+    setAuthLoading(true);
     setAuthError("");
     try {
       const res = await fetch(`${API_BASE}/api/admin/settings`, {
         headers: { "x-admin-password": password },
       });
-      if (res.status === 401) {
-        setAuthError("Senha incorreta.");
-        return;
-      }
+      if (res.status === 401) { setAuthError("Senha incorreta."); return; }
       const data = await res.json();
       setEmailVerification(data.email_verification_enabled);
       setAuthenticated(true);
     } catch {
       setAuthError("Erro ao conectar com o servidor.");
     } finally {
-      setLoading(false);
+      setAuthLoading(false);
     }
   }
 
   async function handleToggle(value: boolean) {
-    setSaving(true);
-    setFeedback(null);
+    setSavingSettings(true);
+    setSettingsFeedback(null);
     try {
       const res = await fetch(`${API_BASE}/api/admin/settings`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "x-admin-password": password,
-        },
+        headers: { "Content-Type": "application/json", "x-admin-password": password },
         body: JSON.stringify({ email_verification_enabled: value }),
       });
-      if (!res.ok) throw new Error("Falha ao salvar");
+      if (!res.ok) throw new Error();
       const data = await res.json();
       setEmailVerification(data.email_verification_enabled);
-      setFeedback({ type: "success", message: value ? "Verificação de e-mail ativada." : "Verificação de e-mail desativada. Novos cadastros entram direto." });
+      setSettingsFeedback({
+        type: "success",
+        message: value
+          ? "Verificação de e-mail ativada."
+          : "Verificação desativada. Novos cadastros entram direto.",
+      });
     } catch {
-      setFeedback({ type: "error", message: "Erro ao salvar configuração." });
+      setSettingsFeedback({ type: "error", message: "Erro ao salvar." });
     } finally {
-      setSaving(false);
+      setSavingSettings(false);
     }
   }
+
+  async function handleDelete(user: User) {
+    setDeletingId(user.id);
+    try {
+      await fetch(`${API_BASE}/api/admin/users/${user.id}`, {
+        method: "DELETE",
+        headers: { "x-admin-password": password },
+      });
+      setUsers(prev => prev.filter(u => u.id !== user.id));
+    } finally {
+      setDeletingId(null);
+      setConfirmDelete(null);
+    }
+  }
+
+  const filteredUsers = users.filter(u =>
+    `${u.name} ${u.email} ${u.course} ${u.department}`.toLowerCase().includes(search.toLowerCase())
+  );
 
   if (!authenticated) {
     return (
@@ -76,21 +137,19 @@ export default function Admin() {
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-950"
                 placeholder="••••••••"
                 required
                 autoFocus
               />
             </div>
-            {authError && (
-              <p className="text-sm text-red-600">{authError}</p>
-            )}
+            {authError && <p className="text-sm text-red-600">{authError}</p>}
             <button
               type="submit"
-              disabled={loading}
+              disabled={authLoading}
               className="w-full py-2.5 bg-blue-950 text-white rounded-lg text-sm font-semibold hover:bg-blue-900 disabled:opacity-50 transition-colors"
             >
-              {loading ? "Entrando..." : "Entrar"}
+              {authLoading ? "Entrando..." : "Entrar"}
             </button>
           </form>
         </div>
@@ -100,6 +159,7 @@ export default function Admin() {
 
   return (
     <div className="min-h-[100dvh] bg-gray-50">
+      {/* Header */}
       <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-blue-950 flex items-center justify-center">
@@ -113,62 +173,174 @@ export default function Admin() {
             <p className="text-xs text-gray-400">FaceUFSC</p>
           </div>
         </div>
-        <button
-          onClick={() => { setAuthenticated(false); setPassword(""); }}
-          className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
-        >
+        <button onClick={() => { setAuthenticated(false); setPassword(""); }} className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
           Sair
         </button>
       </header>
 
-      <main className="max-w-2xl mx-auto px-6 py-10 space-y-6">
-        <div>
-          <h2 className="text-lg font-bold text-gray-900">Configurações de cadastro</h2>
-          <p className="text-sm text-gray-500 mt-1">Controle o fluxo de criação de contas.</p>
-        </div>
-
-        {feedback && (
-          <div className={`rounded-lg px-4 py-3 text-sm font-medium ${
-            feedback.type === "success" ? "bg-green-50 text-green-800 border border-green-200" : "bg-red-50 text-red-800 border border-red-200"
-          }`}>
-            {feedback.message}
-          </div>
-        )}
-
-        <div className="bg-white rounded-2xl border border-gray-200 p-6">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
-              <h3 className="text-sm font-semibold text-gray-900">Verificação de e-mail no cadastro</h3>
-              <p className="text-sm text-gray-500 mt-1 leading-relaxed">
-                {emailVerification
-                  ? "Ativada — novos usuários recebem um e-mail de confirmação antes de acessar a plataforma."
-                  : "Desativada — novos usuários entram direto após preencher o formulário, sem confirmar o e-mail."}
-              </p>
-            </div>
+      {/* Tabs */}
+      <div className="bg-white border-b border-gray-200 px-6">
+        <div className="flex gap-6">
+          {(["settings", "users"] as const).map(t => (
             <button
-              onClick={() => handleToggle(!emailVerification)}
-              disabled={saving}
-              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50 ${
-                emailVerification ? "bg-blue-950" : "bg-gray-300"
+              key={t}
+              onClick={() => setTab(t)}
+              className={`py-3 text-sm font-medium border-b-2 transition-colors ${
+                tab === t ? "border-blue-950 text-blue-950" : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
             >
-              <span
-                className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${
-                  emailVerification ? "translate-x-5" : "translate-x-0"
-                }`}
-              />
+              {t === "settings" ? "Configurações" : `Inscritos${users.length ? ` (${users.length})` : ""}`}
             </button>
-          </div>
-          <div className="mt-4 pt-4 border-t border-gray-100">
-            <p className="text-xs text-gray-400">
-              Status atual:{" "}
-              <span className={`font-semibold ${emailVerification ? "text-blue-900" : "text-gray-600"}`}>
-                {emailVerification ? "Verificação obrigatória" : "Acesso imediato"}
-              </span>
+          ))}
+        </div>
+      </div>
+
+      <main className="max-w-4xl mx-auto px-6 py-8 space-y-6">
+
+        {/* Settings Tab */}
+        {tab === "settings" && (
+          <>
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">Configurações de cadastro</h2>
+              <p className="text-sm text-gray-500 mt-1">Controle o fluxo de criação de contas.</p>
+            </div>
+            {settingsFeedback && (
+              <div className={`rounded-lg px-4 py-3 text-sm font-medium ${
+                settingsFeedback.type === "success" ? "bg-green-50 text-green-800 border border-green-200" : "bg-red-50 text-red-800 border border-red-200"
+              }`}>
+                {settingsFeedback.message}
+              </div>
+            )}
+            <div className="bg-white rounded-2xl border border-gray-200 p-6">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-gray-900">Verificação de e-mail no cadastro</h3>
+                  <p className="text-sm text-gray-500 mt-1 leading-relaxed">
+                    {emailVerification
+                      ? "Ativada — novos usuários recebem um e-mail de confirmação antes de acessar a plataforma."
+                      : "Desativada — novos usuários entram direto após preencher o formulário."}
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleToggle(!emailVerification)}
+                  disabled={savingSettings}
+                  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50 ${
+                    emailVerification ? "bg-blue-950" : "bg-gray-300"
+                  }`}
+                >
+                  <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${emailVerification ? "translate-x-5" : "translate-x-0"}`} />
+                </button>
+              </div>
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <p className="text-xs text-gray-400">
+                  Status:{" "}
+                  <span className={`font-semibold ${emailVerification ? "text-blue-900" : "text-gray-600"}`}>
+                    {emailVerification ? "Verificação obrigatória" : "Acesso imediato"}
+                  </span>
+                </p>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Users Tab */}
+        {tab === "users" && (
+          <>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">Inscritos</h2>
+                <p className="text-sm text-gray-500 mt-1">{users.length} usuário{users.length !== 1 ? "s" : ""} cadastrado{users.length !== 1 ? "s" : ""}.</p>
+              </div>
+              <button onClick={fetchUsers} className="text-xs text-gray-400 hover:text-gray-600 border border-gray-200 rounded-lg px-3 py-1.5 transition-colors">
+                Atualizar
+              </button>
+            </div>
+
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Buscar por nome, e-mail, curso..."
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-950"
+            />
+
+            {usersLoading ? (
+              <div className="flex justify-center py-12">
+                <div className="h-8 w-8 rounded-full border-4 border-blue-950 border-t-transparent animate-spin" />
+              </div>
+            ) : filteredUsers.length === 0 ? (
+              <div className="text-center py-12 text-gray-400 text-sm">
+                {search ? "Nenhum usuário encontrado." : "Nenhum inscrito ainda."}
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nome</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">Curso / Vínculo</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">Cadastro</th>
+                      <th className="px-4 py-3"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {filteredUsers.map(user => (
+                      <tr key={user.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-3">
+                          <p className="font-medium text-gray-900">{user.name}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">{user.email}</p>
+                        </td>
+                        <td className="px-4 py-3 hidden md:table-cell">
+                          <p className="text-gray-700">{user.course}</p>
+                          <p className="text-xs text-gray-400 capitalize">{user.role} · {user.entryYear}</p>
+                        </td>
+                        <td className="px-4 py-3 text-gray-500 hidden sm:table-cell">
+                          {formatDate(user.createdAt)}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            onClick={() => setConfirmDelete(user)}
+                            className="text-xs text-red-500 hover:text-red-700 font-medium transition-colors px-2 py-1 rounded hover:bg-red-50"
+                          >
+                            Excluir
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        )}
+      </main>
+
+      {/* Modal de confirmação de exclusão */}
+      {confirmDelete && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm">
+            <h3 className="text-base font-bold text-gray-900">Excluir inscrito</h3>
+            <p className="text-sm text-gray-500 mt-2">
+              Tem certeza que deseja excluir <strong>{confirmDelete.name}</strong>? Esta ação não pode ser desfeita.
             </p>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setConfirmDelete(null)}
+                className="flex-1 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => handleDelete(confirmDelete)}
+                disabled={deletingId === confirmDelete.id}
+                className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 disabled:opacity-50 transition-colors"
+              >
+                {deletingId === confirmDelete.id ? "Excluindo..." : "Excluir"}
+              </button>
+            </div>
           </div>
         </div>
-      </main>
+      )}
     </div>
   );
 }

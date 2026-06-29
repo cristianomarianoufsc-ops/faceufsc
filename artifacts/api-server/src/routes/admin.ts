@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { appSettingsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { appSettingsTable, usersTable } from "@workspace/db";
+import { eq, desc } from "drizzle-orm";
 
 const router = Router();
 
@@ -49,6 +49,51 @@ router.put("/admin/settings", requireAdmin, async (req, res): Promise<void> => {
       });
 
     res.json({ email_verification_enabled: value === "true" });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Erro interno." });
+  }
+});
+
+router.get("/admin/users", requireAdmin, async (req, res): Promise<void> => {
+  try {
+    const users = await db
+      .select({
+        id: usersTable.id,
+        name: usersTable.name,
+        email: usersTable.email,
+        course: usersTable.course,
+        department: usersTable.department,
+        role: usersTable.role,
+        entryYear: usersTable.entryYear,
+        createdAt: usersTable.createdAt,
+      })
+      .from(usersTable)
+      .orderBy(desc(usersTable.createdAt));
+
+    res.json({ users, total: users.length });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Erro interno." });
+  }
+});
+
+router.delete("/admin/users/:id", requireAdmin, async (req, res): Promise<void> => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "ID inválido." });
+      return;
+    }
+
+    const [deleted] = await db.delete(usersTable).where(eq(usersTable.id, id)).returning({ id: usersTable.id });
+
+    if (!deleted) {
+      res.status(404).json({ error: "Usuário não encontrado." });
+      return;
+    }
+
+    res.json({ ok: true });
   } catch (err) {
     req.log.error(err);
     res.status(500).json({ error: "Erro interno." });
