@@ -1,7 +1,6 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import nodemailer from "nodemailer";
 import { db } from "@workspace/db";
 import { usersTable, emailVerificationsTable } from "@workspace/db";
 import { eq, lt } from "drizzle-orm";
@@ -9,25 +8,53 @@ import { signToken, verifyToken, extractToken } from "../lib/jwt";
 
 const router = Router();
 
-const GMAIL_USER = process.env.GMAIL_USER;
-const GMAIL_PASS = process.env.GMAIL_APP_PASSWORD;
+const BREVO_API_KEY = process.env.BREVO_API_KEY;
+const GMAIL_USER = process.env.GMAIL_USER ?? "faceufsc@gmail.com";
 
-if (!GMAIL_USER || !GMAIL_PASS) {
-  console.error("FATAL: GMAIL_USER and GMAIL_APP_PASSWORD environment variables are required");
+if (!BREVO_API_KEY) {
+  console.error("FATAL: BREVO_API_KEY environment variable is required");
 }
 
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false,
-  auth: {
-    user: GMAIL_USER,
-    pass: GMAIL_PASS,
-  },
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 15000,
-});
+async function sendVerificationEmail(to: string, name: string, verifyUrl: string): Promise<void> {
+  if (!BREVO_API_KEY) throw new Error("BREVO_API_KEY not configured");
+
+  const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "api-key": BREVO_API_KEY,
+    },
+    body: JSON.stringify({
+      sender: { name: "FaceUFSC", email: GMAIL_USER },
+      to: [{ email: to }],
+      subject: "Confirme seu e-mail — FaceUFSC",
+      htmlContent: `
+        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; background: #f8f9fa; border-radius: 12px;">
+          <h1 style="color: #003366; font-size: 28px; margin-bottom: 8px;">FaceUFSC</h1>
+          <p style="color: #333; font-size: 16px; margin-bottom: 24px;">
+            Olá, <strong>${name}</strong>! Para concluir seu cadastro, confirme seu e-mail clicando no botão abaixo.
+          </p>
+          <a href="${verifyUrl}"
+             style="display: inline-block; background: #003366; color: #fff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-size: 15px; font-weight: 600;">
+            Confirmar e-mail
+          </a>
+          <p style="color: #666; font-size: 13px; margin-top: 24px;">
+            Este link expira em 24 horas. Se você não solicitou o cadastro, ignore este email.
+          </p>
+          <p style="color: #999; font-size: 12px; margin-top: 8px;">
+            Ou copie e cole no navegador:<br/>
+            <span style="word-break: break-all;">${verifyUrl}</span>
+          </p>
+        </div>
+      `,
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Brevo API error ${res.status}: ${body}`);
+  }
+}
 
 const ALLOWED_DOMAINS = ["@ufsc.br", "@grad.ufsc.br", "@posgrad.ufsc.br", "@servidor.ufsc.br"];
 const VERIFY_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
@@ -42,7 +69,7 @@ function getAppUrl(req: import("express").Request): string {
 
 router.post("/auth/register", async (req, res): Promise<void> => {
   try {
-    if (!GMAIL_USER || !GMAIL_PASS) {
+    if (!BREVO_API_KEY) {
       res.status(500).json({ error: "Serviço de email não configurado. Contate o administrador." });
       return;
     }
@@ -82,30 +109,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
     const appUrl = getAppUrl(req);
     const verifyUrl = `${appUrl}/verify-email?token=${token}`;
 
-    await transporter.sendMail({
-      from: `"FaceUFSC" <${GMAIL_USER}>`,
-      to: email,
-      subject: "Confirme seu e-mail — FaceUFSC",
-      html: `
-        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; background: #f8f9fa; border-radius: 12px;">
-          <h1 style="color: #003366; font-size: 28px; margin-bottom: 8px;">FaceUFSC</h1>
-          <p style="color: #333; font-size: 16px; margin-bottom: 24px;">
-            Olá, <strong>${name}</strong>! Para concluir seu cadastro, confirme seu e-mail clicando no botão abaixo.
-          </p>
-          <a href="${verifyUrl}"
-             style="display: inline-block; background: #003366; color: #fff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-size: 15px; font-weight: 600;">
-            Confirmar e-mail
-          </a>
-          <p style="color: #666; font-size: 13px; margin-top: 24px;">
-            Este link expira em 24 horas. Se você não solicitou o cadastro, ignore este email.
-          </p>
-          <p style="color: #999; font-size: 12px; margin-top: 8px;">
-            Ou copie e cole no navegador:<br/>
-            <span style="word-break: break-all;">${verifyUrl}</span>
-          </p>
-        </div>
-      `,
-    });
+    await sendVerificationEmail(email, name, verifyUrl);
 
     res.status(202).json({ message: "E-mail de verificação enviado. Verifique sua caixa de entrada." });
   } catch (err) {
