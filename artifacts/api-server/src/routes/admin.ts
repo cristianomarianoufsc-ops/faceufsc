@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { appSettingsTable, usersTable } from "@workspace/db";
+import { appSettingsTable, usersTable, postsTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
 
 const router = Router();
@@ -39,7 +39,6 @@ router.put("/admin/settings", requireAdmin, async (req, res): Promise<void> => {
   try {
     const { email_verification_enabled } = req.body;
     const value = email_verification_enabled ? "true" : "false";
-
     await db
       .insert(appSettingsTable)
       .values({ key: "email_verification_enabled", value, updatedAt: new Date() })
@@ -47,7 +46,6 @@ router.put("/admin/settings", requireAdmin, async (req, res): Promise<void> => {
         target: appSettingsTable.key,
         set: { value, updatedAt: new Date() },
       });
-
     res.json({ email_verification_enabled: value === "true" });
   } catch (err) {
     req.log.error(err);
@@ -70,7 +68,6 @@ router.get("/admin/users", requireAdmin, async (req, res): Promise<void> => {
       })
       .from(usersTable)
       .orderBy(desc(usersTable.createdAt));
-
     res.json({ users, total: users.length });
   } catch (err) {
     req.log.error(err);
@@ -81,18 +78,56 @@ router.get("/admin/users", requireAdmin, async (req, res): Promise<void> => {
 router.delete("/admin/users/:id", requireAdmin, async (req, res): Promise<void> => {
   try {
     const id = parseInt(req.params.id);
-    if (isNaN(id)) {
-      res.status(400).json({ error: "ID inválido." });
-      return;
-    }
-
+    if (isNaN(id)) { res.status(400).json({ error: "ID inválido." }); return; }
     const [deleted] = await db.delete(usersTable).where(eq(usersTable.id, id)).returning({ id: usersTable.id });
+    if (!deleted) { res.status(404).json({ error: "Usuário não encontrado." }); return; }
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Erro interno." });
+  }
+});
 
-    if (!deleted) {
-      res.status(404).json({ error: "Usuário não encontrado." });
-      return;
-    }
+router.get("/admin/posts", requireAdmin, async (req, res): Promise<void> => {
+  try {
+    const posts = await db
+      .select({
+        id: postsTable.id,
+        content: postsTable.content,
+        authorId: postsTable.authorId,
+        authorName: postsTable.authorName,
+        authorCourse: postsTable.authorCourse,
+        communityName: postsTable.communityName,
+        likesCount: postsTable.likesCount,
+        commentsCount: postsTable.commentsCount,
+        createdAt: postsTable.createdAt,
+      })
+      .from(postsTable)
+      .orderBy(desc(postsTable.createdAt));
 
+    // Marcar posts órfãos (autor não existe mais na tabela users)
+    const userIds = new Set(
+      (await db.select({ id: usersTable.id }).from(usersTable)).map(u => u.id)
+    );
+    const result = posts.map(p => ({
+      ...p,
+      createdAt: p.createdAt.toISOString(),
+      orphaned: !userIds.has(p.authorId),
+    }));
+
+    res.json({ posts: result, total: result.length });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Erro interno." });
+  }
+});
+
+router.delete("/admin/posts/:id", requireAdmin, async (req, res): Promise<void> => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) { res.status(400).json({ error: "ID inválido." }); return; }
+    const [deleted] = await db.delete(postsTable).where(eq(postsTable.id, id)).returning({ id: postsTable.id });
+    if (!deleted) { res.status(404).json({ error: "Post não encontrado." }); return; }
     res.json({ ok: true });
   } catch (err) {
     req.log.error(err);
