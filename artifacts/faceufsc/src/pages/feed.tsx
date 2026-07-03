@@ -73,6 +73,9 @@ export default function Feed() {
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                   <div className="flex gap-4">
                     <Avatar className="h-10 w-10 border border-border hidden sm:block">
+                      {user?.avatarUrl ? (
+                        <AvatarImage src={user.avatarUrl} alt={user.name} className="object-cover" />
+                      ) : null}
                       <AvatarFallback className="bg-secondary text-secondary-foreground font-bold">{user ? user.name.split(" ").map(n => n[0]).join("").substring(0,2).toUpperCase() : "?"}</AvatarFallback>
                     </Avatar>
                     <FormField
@@ -139,7 +142,7 @@ export default function Feed() {
                     <CardHeader className="flex flex-row items-start gap-4 pb-4">
                       <Avatar className="h-10 w-10 border border-border">
                         {post.authorAvatarUrl ? (
-                          <AvatarImage src={post.authorAvatarUrl} alt={post.authorName} />
+                          <AvatarImage src={post.authorAvatarUrl} alt={post.authorName} className="object-cover" />
                         ) : null}
                         <AvatarFallback className="bg-primary text-primary-foreground">{post.authorName.substring(0, 2).toUpperCase()}</AvatarFallback>
                       </Avatar>
@@ -237,6 +240,9 @@ export default function Feed() {
                 ) : activity?.map((item) => (
                   <div key={item.id} className="flex gap-3 text-sm">
                     <Avatar className="h-8 w-8 border">
+                      {item.actorAvatarUrl ? (
+                        <AvatarImage src={item.actorAvatarUrl} alt={item.actorName} className="object-cover" />
+                      ) : null}
                       <AvatarFallback className="text-xs bg-secondary/20 text-secondary-foreground">{item.actorName.substring(0, 2).toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <div>

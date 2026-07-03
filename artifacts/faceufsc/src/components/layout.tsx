@@ -111,9 +111,17 @@ export function Layout({ children }: { children: ReactNode }) {
             </button>
 
             <Link href={user ? `/profile/${user.id}` : "/"} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <div className="h-9 w-9 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground font-bold border-2 border-primary-foreground/20 text-sm">
-                {initials}
-              </div>
+              {user?.avatarUrl ? (
+                <img
+                  src={user.avatarUrl}
+                  alt={user.name}
+                  className="h-9 w-9 rounded-full object-cover border-2 border-primary-foreground/20"
+                />
+              ) : (
+                <div className="h-9 w-9 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground font-bold border-2 border-primary-foreground/20 text-sm">
+                  {initials}
+                </div>
+              )}
             </Link>
           </div>
         </div>

@@ -124,14 +124,14 @@ export default function Profile() {
   return (
     <Layout>
       <div className="max-w-4xl mx-auto space-y-6">
-        <div className="h-48 bg-gradient-to-r from-primary/80 to-primary rounded-xl relative mb-20 shadow-sm">
-          <div className="absolute -bottom-16 left-8">
+        <div className="h-48 bg-gradient-to-r from-primary/80 to-primary rounded-xl relative mb-24 shadow-sm">
+          <div className="absolute -bottom-20 left-1/2 -translate-x-1/2">
             <div className="relative group">
-              <Avatar className="h-32 w-32 border-4 border-background shadow-md">
+              <Avatar className="h-44 w-44 border-4 border-background shadow-md">
                 {displayAvatar ? (
                   <AvatarImage src={displayAvatar} alt={user.name} className="object-cover" />
                 ) : null}
-                <AvatarFallback className="bg-primary/5 text-primary text-4xl font-bold">
+                <AvatarFallback className="bg-primary/5 text-primary text-5xl font-bold">
                   {user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
