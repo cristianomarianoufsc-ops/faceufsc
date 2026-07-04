@@ -168,6 +168,63 @@ export interface ActivityItem {
   createdAt: string;
 }
 
+export type ConnectionStatusProperty = typeof ConnectionStatusProperty[keyof typeof ConnectionStatusProperty];
+
+
+export const ConnectionStatusProperty = {
+  pending: 'pending',
+  accepted: 'accepted',
+  rejected: 'rejected',
+} as const;
+
+export interface Connection {
+  id: number;
+  requesterId: number;
+  receiverId: number;
+  status: ConnectionStatusProperty;
+  requesterName: string;
+  /** @nullable */
+  requesterAvatarUrl?: string | null;
+  requesterCourse: string;
+  receiverName: string;
+  /** @nullable */
+  receiverAvatarUrl?: string | null;
+  receiverCourse: string;
+  createdAt: string;
+}
+
+export type ConnectionStatusStatus = typeof ConnectionStatusStatus[keyof typeof ConnectionStatusStatus];
+
+
+export const ConnectionStatusStatus = {
+  none: 'none',
+  pending_sent: 'pending_sent',
+  pending_received: 'pending_received',
+  connected: 'connected',
+} as const;
+
+export interface ConnectionStatus {
+  status: ConnectionStatusStatus;
+  /** @nullable */
+  connectionId: number | null;
+}
+
+export interface ConnectionRequest {
+  receiverId: number;
+}
+
+export type ConnectionActionAction = typeof ConnectionActionAction[keyof typeof ConnectionActionAction];
+
+
+export const ConnectionActionAction = {
+  accept: 'accept',
+  reject: 'reject',
+} as const;
+
+export interface ConnectionAction {
+  action: ConnectionActionAction;
+}
+
 export type ListUsersParams = {
 search?: string;
 course?: string;

@@ -317,3 +317,112 @@ export const GetRecentActivityResponseItem = zod.object({
 export const GetRecentActivityResponse = zod.array(GetRecentActivityResponseItem)
 
 
+/**
+ * @summary List my accepted connections
+ */
+export const ListConnectionsResponseItem = zod.object({
+  "id": zod.number(),
+  "requesterId": zod.number(),
+  "receiverId": zod.number(),
+  "status": zod.enum(['pending', 'accepted', 'rejected']),
+  "requesterName": zod.string(),
+  "requesterAvatarUrl": zod.string().nullish(),
+  "requesterCourse": zod.string(),
+  "receiverName": zod.string(),
+  "receiverAvatarUrl": zod.string().nullish(),
+  "receiverCourse": zod.string(),
+  "createdAt": zod.string()
+})
+export const ListConnectionsResponse = zod.array(ListConnectionsResponseItem)
+
+
+/**
+ * @summary Send a connection request
+ */
+export const SendConnectionRequestBody = zod.object({
+  "receiverId": zod.number()
+})
+
+export const SendConnectionRequestResponse = zod.object({
+  "id": zod.number(),
+  "requesterId": zod.number(),
+  "receiverId": zod.number(),
+  "status": zod.enum(['pending', 'accepted', 'rejected']),
+  "requesterName": zod.string(),
+  "requesterAvatarUrl": zod.string().nullish(),
+  "requesterCourse": zod.string(),
+  "receiverName": zod.string(),
+  "receiverAvatarUrl": zod.string().nullish(),
+  "receiverCourse": zod.string(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary List pending connection requests I received
+ */
+export const ListConnectionRequestsResponseItem = zod.object({
+  "id": zod.number(),
+  "requesterId": zod.number(),
+  "receiverId": zod.number(),
+  "status": zod.enum(['pending', 'accepted', 'rejected']),
+  "requesterName": zod.string(),
+  "requesterAvatarUrl": zod.string().nullish(),
+  "requesterCourse": zod.string(),
+  "receiverName": zod.string(),
+  "receiverAvatarUrl": zod.string().nullish(),
+  "receiverCourse": zod.string(),
+  "createdAt": zod.string()
+})
+export const ListConnectionRequestsResponse = zod.array(ListConnectionRequestsResponseItem)
+
+
+/**
+ * @summary Get connection status with a specific user
+ */
+export const GetConnectionStatusParams = zod.object({
+  "userId": zod.coerce.number()
+})
+
+export const GetConnectionStatusResponse = zod.object({
+  "status": zod.enum(['none', 'pending_sent', 'pending_received', 'connected']),
+  "connectionId": zod.number().nullable()
+})
+
+
+/**
+ * @summary Accept or reject a connection request
+ */
+export const UpdateConnectionParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateConnectionBody = zod.object({
+  "action": zod.enum(['accept', 'reject'])
+})
+
+export const UpdateConnectionResponse = zod.object({
+  "id": zod.number(),
+  "requesterId": zod.number(),
+  "receiverId": zod.number(),
+  "status": zod.enum(['pending', 'accepted', 'rejected']),
+  "requesterName": zod.string(),
+  "requesterAvatarUrl": zod.string().nullish(),
+  "requesterCourse": zod.string(),
+  "receiverName": zod.string(),
+  "receiverAvatarUrl": zod.string().nullish(),
+  "receiverCourse": zod.string(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Cancel a request or remove a connection
+ */
+export const DeleteConnectionParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteConnectionResponse = zod.void()
+
+

@@ -14,6 +14,7 @@ import People from "@/pages/people";
 import Profile from "@/pages/profile";
 import VerifyEmail from "@/pages/verify-email";
 import Admin from "@/pages/admin";
+import Connections from "@/pages/connections";
 import { ComponentType } from "react";
 
 const queryClient = new QueryClient({
@@ -75,6 +76,7 @@ const ProtectedEventsRoute = () => <ProtectedRoute component={Events} />;
 const ProtectedEventDetailRoute = () => <ProtectedRoute component={EventDetail} />;
 const ProtectedPeopleRoute = () => <ProtectedRoute component={People} />;
 const ProtectedProfileRoute = () => <ProtectedRoute component={Profile} />;
+const ProtectedConnectionsRoute = () => <ProtectedRoute component={Connections} />;
 
 function Router() {
   return (
@@ -89,6 +91,7 @@ function Router() {
       <Route path="/events/:id" component={ProtectedEventDetailRoute} />
       <Route path="/people" component={ProtectedPeopleRoute} />
       <Route path="/profile/:id" component={ProtectedProfileRoute} />
+      <Route path="/connections" component={ProtectedConnectionsRoute} />
       <Route component={NotFound} />
     </Switch>
   );

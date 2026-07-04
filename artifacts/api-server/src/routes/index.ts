@@ -8,6 +8,7 @@ import feedRouter from "./feed";
 import authRouter from "./auth";
 import storageRouter from "./storage";
 import adminRouter from "./admin";
+import connectionsRouter from "./connections";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(eventsRouter);
 router.use(feedRouter);
 router.use(storageRouter);
 router.use(adminRouter);
+router.use(connectionsRouter);
 
 export default router;

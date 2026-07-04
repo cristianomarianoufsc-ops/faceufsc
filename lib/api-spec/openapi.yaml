@@ -19,6 +19,8 @@ tags:
     description: University events
   - name: feed
     description: Activity feed
+  - name: connections
+    description: User connections
 paths:
   /healthz:
     get:
@@ -296,6 +298,110 @@ paths:
                 items:
                   $ref: "#/components/schemas/ActivityItem"
 
+  /connections:
+    get:
+      operationId: listConnections
+      tags: [connections]
+      summary: List my accepted connections
+      responses:
+        "200":
+          description: List of accepted connections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Connection"
+    post:
+      operationId: sendConnectionRequest
+      tags: [connections]
+      summary: Send a connection request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConnectionRequest"
+      responses:
+        "201":
+          description: Connection request sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Connection"
+
+  /connections/requests:
+    get:
+      operationId: listConnectionRequests
+      tags: [connections]
+      summary: List pending connection requests I received
+      responses:
+        "200":
+          description: List of pending requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Connection"
+
+  /connections/status/{userId}:
+    get:
+      operationId: getConnectionStatus
+      tags: [connections]
+      summary: Get connection status with a specific user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Connection status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectionStatus"
+
+  /connections/{id}:
+    patch:
+      operationId: updateConnection
+      tags: [connections]
+      summary: Accept or reject a connection request
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConnectionAction"
+      responses:
+        "200":
+          description: Connection updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Connection"
+    delete:
+      operationId: deleteConnection
+      tags: [connections]
+      summary: Cancel a request or remove a connection
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Connection removed
+
 components:
   schemas:
     HealthStatus:
@@ -566,3 +672,69 @@ components:
         - actorName
         - description
         - createdAt
+
+    Connection:
+      type: object
+      properties:
+        id:
+          type: integer
+        requesterId:
+          type: integer
+        receiverId:
+          type: integer
+        status:
+          type: string
+          enum: [pending, accepted, rejected]
+        requesterName:
+          type: string
+        requesterAvatarUrl:
+          type: ["string", "null"]
+        requesterCourse:
+          type: string
+        receiverName:
+          type: string
+        receiverAvatarUrl:
+          type: ["string", "null"]
+        receiverCourse:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - requesterId
+        - receiverId
+        - status
+        - requesterName
+        - requesterCourse
+        - receiverName
+        - receiverCourse
+        - createdAt
+
+    ConnectionStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [none, pending_sent, pending_received, connected]
+        connectionId:
+          type: ["integer", "null"]
+      required:
+        - status
+        - connectionId
+
+    ConnectionRequest:
+      type: object
+      properties:
+        receiverId:
+          type: integer
+      required:
+        - receiverId
+
+    ConnectionAction:
+      type: object
+      properties:
+        action:
+          type: string
+          enum: [accept, reject]
+      required:
+        - action

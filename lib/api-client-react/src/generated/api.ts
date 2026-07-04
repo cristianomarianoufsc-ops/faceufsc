@@ -23,6 +23,10 @@ import type {
   ActivityItem,
   Community,
   CommunityInput,
+  Connection,
+  ConnectionAction,
+  ConnectionRequest,
+  ConnectionStatus,
   Event,
   EventInput,
   FeedStats,
@@ -1204,4 +1208,446 @@ export function useGetRecentActivity<TData = Awaited<ReturnType<typeof getRecent
 
 
 
+
+export const getListConnectionsUrl = () => {
+
+
+
+
+  return `/api/connections`
+}
+
+/**
+ * @summary List my accepted connections
+ */
+export const listConnections = async ( options?: RequestInit): Promise<Connection[]> => {
+
+  return customFetch<Connection[]>(getListConnectionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListConnectionsQueryKey = () => {
+    return [
+    `/api/connections`
+    ] as const;
+    }
+
+
+export const getListConnectionsQueryOptions = <TData = Awaited<ReturnType<typeof listConnections>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listConnections>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListConnectionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listConnections>>> = ({ signal }) => listConnections({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listConnections>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListConnectionsQueryResult = NonNullable<Awaited<ReturnType<typeof listConnections>>>
+export type ListConnectionsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List my accepted connections
+ */
+
+export function useListConnections<TData = Awaited<ReturnType<typeof listConnections>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listConnections>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListConnectionsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSendConnectionRequestUrl = () => {
+
+
+
+
+  return `/api/connections`
+}
+
+/**
+ * @summary Send a connection request
+ */
+export const sendConnectionRequest = async (connectionRequest: ConnectionRequest, options?: RequestInit): Promise<Connection> => {
+
+  return customFetch<Connection>(getSendConnectionRequestUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(connectionRequest)
+  }
+);}
+
+
+
+
+export const getSendConnectionRequestMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendConnectionRequest>>, TError,{data: BodyType<ConnectionRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendConnectionRequest>>, TError,{data: BodyType<ConnectionRequest>}, TContext> => {
+
+const mutationKey = ['sendConnectionRequest'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendConnectionRequest>>, {data: BodyType<ConnectionRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  sendConnectionRequest(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendConnectionRequestMutationResult = NonNullable<Awaited<ReturnType<typeof sendConnectionRequest>>>
+    export type SendConnectionRequestMutationBody = BodyType<ConnectionRequest>
+    export type SendConnectionRequestMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Send a connection request
+ */
+export const useSendConnectionRequest = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendConnectionRequest>>, TError,{data: BodyType<ConnectionRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sendConnectionRequest>>,
+        TError,
+        {data: BodyType<ConnectionRequest>},
+        TContext
+      > => {
+      return useMutation(getSendConnectionRequestMutationOptions(options));
+    }
+
+export const getListConnectionRequestsUrl = () => {
+
+
+
+
+  return `/api/connections/requests`
+}
+
+/**
+ * @summary List pending connection requests I received
+ */
+export const listConnectionRequests = async ( options?: RequestInit): Promise<Connection[]> => {
+
+  return customFetch<Connection[]>(getListConnectionRequestsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListConnectionRequestsQueryKey = () => {
+    return [
+    `/api/connections/requests`
+    ] as const;
+    }
+
+
+export const getListConnectionRequestsQueryOptions = <TData = Awaited<ReturnType<typeof listConnectionRequests>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listConnectionRequests>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListConnectionRequestsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listConnectionRequests>>> = ({ signal }) => listConnectionRequests({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listConnectionRequests>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListConnectionRequestsQueryResult = NonNullable<Awaited<ReturnType<typeof listConnectionRequests>>>
+export type ListConnectionRequestsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List pending connection requests I received
+ */
+
+export function useListConnectionRequests<TData = Awaited<ReturnType<typeof listConnectionRequests>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listConnectionRequests>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListConnectionRequestsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetConnectionStatusUrl = (userId: number,) => {
+
+
+
+
+  return `/api/connections/status/${userId}`
+}
+
+/**
+ * @summary Get connection status with a specific user
+ */
+export const getConnectionStatus = async (userId: number, options?: RequestInit): Promise<ConnectionStatus> => {
+
+  return customFetch<ConnectionStatus>(getGetConnectionStatusUrl(userId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetConnectionStatusQueryKey = (userId: number,) => {
+    return [
+    `/api/connections/status/${userId}`
+    ] as const;
+    }
+
+
+export const getGetConnectionStatusQueryOptions = <TData = Awaited<ReturnType<typeof getConnectionStatus>>, TError = ErrorType<unknown>>(userId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getConnectionStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetConnectionStatusQueryKey(userId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getConnectionStatus>>> = ({ signal }) => getConnectionStatus(userId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: userId !== null && userId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getConnectionStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetConnectionStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getConnectionStatus>>>
+export type GetConnectionStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get connection status with a specific user
+ */
+
+export function useGetConnectionStatus<TData = Awaited<ReturnType<typeof getConnectionStatus>>, TError = ErrorType<unknown>>(
+ userId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getConnectionStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetConnectionStatusQueryOptions(userId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateConnectionUrl = (id: number,) => {
+
+
+
+
+  return `/api/connections/${id}`
+}
+
+/**
+ * @summary Accept or reject a connection request
+ */
+export const updateConnection = async (id: number,
+    connectionAction: ConnectionAction, options?: RequestInit): Promise<Connection> => {
+
+  return customFetch<Connection>(getUpdateConnectionUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(connectionAction)
+  }
+);}
+
+
+
+
+export const getUpdateConnectionMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateConnection>>, TError,{id: number;data: BodyType<ConnectionAction>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateConnection>>, TError,{id: number;data: BodyType<ConnectionAction>}, TContext> => {
+
+const mutationKey = ['updateConnection'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateConnection>>, {id: number;data: BodyType<ConnectionAction>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateConnection(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateConnectionMutationResult = NonNullable<Awaited<ReturnType<typeof updateConnection>>>
+    export type UpdateConnectionMutationBody = BodyType<ConnectionAction>
+    export type UpdateConnectionMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Accept or reject a connection request
+ */
+export const useUpdateConnection = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateConnection>>, TError,{id: number;data: BodyType<ConnectionAction>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateConnection>>,
+        TError,
+        {id: number;data: BodyType<ConnectionAction>},
+        TContext
+      > => {
+      return useMutation(getUpdateConnectionMutationOptions(options));
+    }
+
+export const getDeleteConnectionUrl = (id: number,) => {
+
+
+
+
+  return `/api/connections/${id}`
+}
+
+/**
+ * @summary Cancel a request or remove a connection
+ */
+export const deleteConnection = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteConnectionUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteConnectionMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteConnection>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteConnection>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteConnection'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteConnection>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteConnection(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteConnectionMutationResult = NonNullable<Awaited<ReturnType<typeof deleteConnection>>>
+
+    export type DeleteConnectionMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Cancel a request or remove a connection
+ */
+export const useDeleteConnection = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteConnection>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteConnection>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteConnectionMutationOptions(options));
+    }
 

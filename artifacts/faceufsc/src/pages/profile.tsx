@@ -1,11 +1,22 @@
 import { useRef, useState } from "react";
 import { useRoute } from "wouter";
-import { GraduationCap, BookOpen, Building, Briefcase, CalendarDays, MapPin, Camera, Loader2 } from "lucide-react";
-import { useGetUser, getGetUserQueryKey } from "@workspace/api-client-react";
+import { GraduationCap, BookOpen, Building, Briefcase, CalendarDays, MapPin, Camera, Loader2, UserPlus, UserCheck, Clock, XCircle, CheckCircle } from "lucide-react";
+import {
+  useGetUser,
+  getGetUserQueryKey,
+  useGetConnectionStatus,
+  getGetConnectionStatusQueryKey,
+  useSendConnectionRequest,
+  useUpdateConnection,
+  useDeleteConnection,
+  getListConnectionsQueryKey,
+  getListConnectionRequestsQueryKey,
+} from "@workspace/api-client-react";
 import { Layout } from "@/components/layout";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth";
@@ -32,6 +43,163 @@ function resizeImageToBase64(file: File, maxPx = 300): Promise<string> {
     img.onerror = reject;
     img.src = url;
   });
+}
+
+function ConnectionButton({ userId, myId }: { userId: number; myId: number }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: statusData, isLoading: statusLoading } = useGetConnectionStatus(userId, {
+    query: {
+      queryKey: getGetConnectionStatusQueryKey(userId),
+      enabled: userId !== myId,
+    },
+  });
+
+  const sendRequest = useSendConnectionRequest();
+  const updateConnection = useUpdateConnection();
+  const deleteConnection = useDeleteConnection();
+
+  function invalidateAll() {
+    queryClient.invalidateQueries({ queryKey: getGetConnectionStatusQueryKey(userId) });
+    queryClient.invalidateQueries({ queryKey: getListConnectionsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getListConnectionRequestsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetUserQueryKey(userId) });
+    queryClient.invalidateQueries({ queryKey: getGetUserQueryKey(myId) });
+  }
+
+  function handleConnect() {
+    sendRequest.mutate(
+      { data: { receiverId: userId } },
+      {
+        onSuccess: () => {
+          invalidateAll();
+          toast({ title: "Pedido de conexão enviado!" });
+        },
+        onError: () => toast({ title: "Erro ao enviar pedido", variant: "destructive" }),
+      }
+    );
+  }
+
+  function handleAccept() {
+    if (!statusData?.connectionId) return;
+    updateConnection.mutate(
+      { id: statusData.connectionId, data: { action: "accept" } },
+      {
+        onSuccess: () => {
+          invalidateAll();
+          toast({ title: "Conexão aceita!", description: "Agora vocês estão conectados." });
+        },
+        onError: () => toast({ title: "Erro ao aceitar pedido", variant: "destructive" }),
+      }
+    );
+  }
+
+  function handleReject() {
+    if (!statusData?.connectionId) return;
+    updateConnection.mutate(
+      { id: statusData.connectionId, data: { action: "reject" } },
+      {
+        onSuccess: () => {
+          invalidateAll();
+          toast({ title: "Pedido recusado." });
+        },
+        onError: () => toast({ title: "Erro ao recusar pedido", variant: "destructive" }),
+      }
+    );
+  }
+
+  function handleRemove() {
+    if (!statusData?.connectionId) return;
+    deleteConnection.mutate(
+      { id: statusData.connectionId },
+      {
+        onSuccess: () => {
+          invalidateAll();
+          toast({ title: "Conexão removida." });
+        },
+        onError: () => toast({ title: "Erro ao remover conexão", variant: "destructive" }),
+      }
+    );
+  }
+
+  const isPending =
+    sendRequest.isPending || updateConnection.isPending || deleteConnection.isPending;
+
+  if (statusLoading) {
+    return <Skeleton className="h-9 w-32" />;
+  }
+
+  const status = statusData?.status ?? "none";
+
+  if (status === "none") {
+    return (
+      <Button
+        onClick={handleConnect}
+        disabled={isPending}
+        className="bg-primary text-primary-foreground hover:bg-primary/90"
+      >
+        {isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <UserPlus className="h-4 w-4 mr-2" />}
+        Conectar
+      </Button>
+    );
+  }
+
+  if (status === "pending_sent") {
+    return (
+      <Button variant="outline" disabled className="border-primary/20 text-muted-foreground">
+        <Clock className="h-4 w-4 mr-2" />
+        Pedido enviado
+      </Button>
+    );
+  }
+
+  if (status === "pending_received") {
+    return (
+      <div className="flex items-center gap-2">
+        <Button
+          onClick={handleAccept}
+          disabled={isPending}
+          className="bg-primary text-primary-foreground hover:bg-primary/90"
+          size="sm"
+        >
+          {isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-1" />}
+          Aceitar
+        </Button>
+        <Button
+          variant="outline"
+          onClick={handleReject}
+          disabled={isPending}
+          size="sm"
+          className="border-primary/20 text-muted-foreground hover:text-destructive hover:border-destructive/30"
+        >
+          <XCircle className="h-4 w-4 mr-1" />
+          Recusar
+        </Button>
+      </div>
+    );
+  }
+
+  // connected
+  return (
+    <Button
+      variant="outline"
+      onClick={handleRemove}
+      disabled={isPending}
+      className="border-green-500/40 text-green-700 hover:bg-destructive/5 hover:text-destructive hover:border-destructive/30 transition-colors group"
+    >
+      {isPending ? (
+        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+      ) : (
+        <>
+          <UserCheck className="h-4 w-4 mr-2 group-hover:hidden" />
+          <XCircle className="h-4 w-4 mr-2 hidden group-hover:block" />
+        </>
+      )}
+      <span className="group-hover:hidden">Conectado</span>
+      <span className="hidden group-hover:inline">Remover</span>
+    </Button>
+  );
 }
 
 export default function Profile() {
@@ -177,15 +345,23 @@ export default function Profile() {
               {user.course}
             </p>
           </div>
-          <div className="flex gap-4 text-sm font-medium">
-             <div className="flex flex-col items-center p-3 bg-card border rounded-lg min-w-[100px]">
-               <span className="text-2xl font-bold text-primary">{user.connectionsCount}</span>
-               <span className="text-muted-foreground text-xs uppercase tracking-wider">Conexões</span>
-             </div>
-             <div className="flex flex-col items-center p-3 bg-card border rounded-lg min-w-[100px]">
-               <span className="text-2xl font-bold text-primary">{user.communitiesCount}</span>
-               <span className="text-muted-foreground text-xs uppercase tracking-wider">Comunidades</span>
-             </div>
+
+          <div className="flex flex-col items-end gap-3">
+            {/* Connection button for other users' profiles */}
+            {!isOwnProfile && authUser && (
+              <ConnectionButton userId={userId} myId={authUser.id} />
+            )}
+
+            <div className="flex gap-4 text-sm font-medium">
+              <div className="flex flex-col items-center p-3 bg-card border rounded-lg min-w-[100px]">
+                <span className="text-2xl font-bold text-primary">{user.connectionsCount}</span>
+                <span className="text-muted-foreground text-xs uppercase tracking-wider">Conexões</span>
+              </div>
+              <div className="flex flex-col items-center p-3 bg-card border rounded-lg min-w-[100px]">
+                <span className="text-2xl font-bold text-primary">{user.communitiesCount}</span>
+                <span className="text-muted-foreground text-xs uppercase tracking-wider">Comunidades</span>
+              </div>
+            </div>
           </div>
         </div>
 
