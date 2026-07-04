@@ -128,6 +128,52 @@ export const DeletePostResponse = zod.void()
 
 
 /**
+ * @summary List comments for a post
+ */
+export const ListCommentsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListCommentsResponseItem = zod.object({
+  "id": zod.number(),
+  "postId": zod.number(),
+  "authorId": zod.number(),
+  "authorName": zod.string(),
+  "authorAvatarUrl": zod.string().nullish(),
+  "authorCourse": zod.string(),
+  "content": zod.string(),
+  "createdAt": zod.string()
+})
+export const ListCommentsResponse = zod.array(ListCommentsResponseItem)
+
+
+/**
+ * @summary Add a comment to a post
+ */
+export const CreateCommentParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+
+export const CreateCommentBody = zod.object({
+  "content": zod.string().min(1)
+})
+
+export const CreateCommentResponse = zod.object({
+  "id": zod.number(),
+  "postId": zod.number(),
+  "authorId": zod.number(),
+  "authorName": zod.string(),
+  "authorAvatarUrl": zod.string().nullish(),
+  "authorCourse": zod.string(),
+  "content": zod.string(),
+  "createdAt": zod.string()
+})
+
+
+/**
  * @summary List communities
  */
 export const ListCommunitiesQueryParams = zod.object({
@@ -189,6 +235,25 @@ export const GetCommunityResponse = zod.object({
   "imageUrl": zod.string().nullish(),
   "createdAt": zod.string()
 })
+
+
+/**
+ * @summary List members of a community
+ */
+export const ListCommunityMembersParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListCommunityMembersResponseItem = zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "name": zod.string(),
+  "avatarUrl": zod.string().nullish(),
+  "course": zod.string(),
+  "role": zod.string(),
+  "joinedAt": zod.string()
+})
+export const ListCommunityMembersResponse = zod.array(ListCommunityMembersResponseItem)
 
 
 /**
@@ -324,7 +389,7 @@ export const ListConnectionsResponseItem = zod.object({
   "id": zod.number(),
   "requesterId": zod.number(),
   "receiverId": zod.number(),
-  "status": zod.enum(['pending', 'accepted', 'rejected']),
+  "status": zod.enum(['pending', 'accepted']),
   "requesterName": zod.string(),
   "requesterAvatarUrl": zod.string().nullish(),
   "requesterCourse": zod.string(),
@@ -347,7 +412,7 @@ export const SendConnectionRequestResponse = zod.object({
   "id": zod.number(),
   "requesterId": zod.number(),
   "receiverId": zod.number(),
-  "status": zod.enum(['pending', 'accepted', 'rejected']),
+  "status": zod.enum(['pending', 'accepted']),
   "requesterName": zod.string(),
   "requesterAvatarUrl": zod.string().nullish(),
   "requesterCourse": zod.string(),
@@ -365,7 +430,7 @@ export const ListConnectionRequestsResponseItem = zod.object({
   "id": zod.number(),
   "requesterId": zod.number(),
   "receiverId": zod.number(),
-  "status": zod.enum(['pending', 'accepted', 'rejected']),
+  "status": zod.enum(['pending', 'accepted']),
   "requesterName": zod.string(),
   "requesterAvatarUrl": zod.string().nullish(),
   "requesterCourse": zod.string(),

@@ -134,6 +134,50 @@ paths:
         "204":
           description: Post deleted
 
+  /posts/{id}/comments:
+    get:
+      operationId: listComments
+      tags: [posts]
+      summary: List comments for a post
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of comments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Comment"
+    post:
+      operationId: createComment
+      tags: [posts]
+      summary: Add a comment to a post
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentInput"
+      responses:
+        "201":
+          description: Comment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comment"
+
   /communities:
     get:
       operationId: listCommunities
@@ -193,6 +237,27 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Community"
+
+  /communities/{id}/members:
+    get:
+      operationId: listCommunityMembers
+      tags: [communities]
+      summary: List members of a community
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of community members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CommunityMember"
 
   /communities/{id}/join:
     post:
@@ -502,6 +567,43 @@ components:
         - content
         - authorId
 
+    Comment:
+      type: object
+      properties:
+        id:
+          type: integer
+        postId:
+          type: integer
+        authorId:
+          type: integer
+        authorName:
+          type: string
+        authorAvatarUrl:
+          type: ["string", "null"]
+        authorCourse:
+          type: string
+        content:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - postId
+        - authorId
+        - authorName
+        - authorCourse
+        - content
+        - createdAt
+
+    CommentInput:
+      type: object
+      properties:
+        content:
+          type: string
+          minLength: 1
+      required:
+        - content
+
     Community:
       type: object
       properties:
@@ -545,6 +647,31 @@ components:
         - name
         - description
         - category
+
+    CommunityMember:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        name:
+          type: string
+        avatarUrl:
+          type: ["string", "null"]
+        course:
+          type: string
+        role:
+          type: string
+        joinedAt:
+          type: string
+      required:
+        - id
+        - userId
+        - name
+        - course
+        - role
+        - joinedAt
 
     JoinInput:
       type: object
@@ -680,7 +807,7 @@ components:
           type: integer
         status:
           type: string
-          enum: [pending, accepted, rejected]
+          enum: [pending, accepted]
         requesterName:
           type: string
         requesterAvatarUrl:

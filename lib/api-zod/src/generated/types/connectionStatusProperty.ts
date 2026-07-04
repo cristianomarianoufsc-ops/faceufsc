@@ -12,5 +12,4 @@ export type ConnectionStatusProperty = typeof ConnectionStatusProperty[keyof typ
 export const ConnectionStatusProperty = {
   pending: 'pending',
   accepted: 'accepted',
-  rejected: 'rejected',
 } as const;

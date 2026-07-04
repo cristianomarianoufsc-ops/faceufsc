@@ -3,18 +3,19 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
-import { MessageCircle, Heart, Share2, Send, Users, Calendar, Activity } from "lucide-react";
-import { 
-  useListPosts, 
-  useCreatePost, 
+import { Send, Users, Calendar, Activity } from "lucide-react";
+import {
+  useListPosts,
+  useCreatePost,
   getListPostsQueryKey,
   useGetFeedStats,
-  useGetRecentActivity
+  useGetRecentActivity,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
+import { PostCard } from "@/components/post-card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,18 +24,19 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth";
 
 const postSchema = z.object({
-  content: z.string().min(1, "A publicacao nao pode estar vazia"),
+  content: z.string().min(1, "A publicação não pode estar vazia"),
 });
 
 export default function Feed() {
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  
-  const { data: posts, isLoading: postsLoading } = useListPosts({}, { 
-    query: { queryKey: getListPostsQueryKey({}) } 
-  });
-  
+
+  const { data: posts, isLoading: postsLoading } = useListPosts(
+    {},
+    { query: { queryKey: getListPostsQueryKey({}) } }
+  );
+
   const { data: stats, isLoading: statsLoading } = useGetFeedStats();
   const { data: activity, isLoading: activityLoading } = useGetRecentActivity();
 
@@ -42,9 +44,7 @@ export default function Feed() {
 
   const form = useForm<z.infer<typeof postSchema>>({
     resolver: zodResolver(postSchema),
-    defaultValues: {
-      content: "",
-    },
+    defaultValues: { content: "" },
   });
 
   function onSubmit(values: z.infer<typeof postSchema>) {
@@ -66,7 +66,9 @@ export default function Feed() {
   return (
     <Layout>
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 max-w-6xl mx-auto">
+        {/* Feed */}
         <div className="lg:col-span-8 space-y-6">
+          {/* New post */}
           <Card className="border-primary/10 shadow-sm">
             <CardContent className="p-4 sm:p-6">
               <Form {...form}>
@@ -76,7 +78,11 @@ export default function Feed() {
                       {user?.avatarUrl ? (
                         <AvatarImage src={user.avatarUrl} alt={user.name} className="object-cover" />
                       ) : null}
-                      <AvatarFallback className="bg-secondary text-secondary-foreground font-bold">{user ? user.name.split(" ").map(n => n[0]).join("").substring(0,2).toUpperCase() : "?"}</AvatarFallback>
+                      <AvatarFallback className="bg-secondary text-secondary-foreground font-bold">
+                        {user
+                          ? user.name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase()
+                          : "?"}
+                      </AvatarFallback>
                     </Avatar>
                     <FormField
                       control={form.control}
@@ -84,10 +90,10 @@ export default function Feed() {
                       render={({ field }) => (
                         <FormItem className="flex-1">
                           <FormControl>
-                            <Textarea 
-                              placeholder="O que está acontecendo no campus?" 
+                            <Textarea
+                              placeholder="O que está acontecendo no campus?"
                               className="min-h-[100px] resize-none border-primary/20 focus-visible:ring-primary"
-                              {...field} 
+                              {...field}
                             />
                           </FormControl>
                           <FormMessage />
@@ -96,8 +102,8 @@ export default function Feed() {
                     />
                   </div>
                   <div className="flex justify-end pt-2">
-                    <Button 
-                      type="submit" 
+                    <Button
+                      type="submit"
                       disabled={createPost.isPending || !form.watch("content")}
                       className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-6"
                     >
@@ -110,6 +116,7 @@ export default function Feed() {
             </CardContent>
           </Card>
 
+          {/* Posts list */}
           <div className="space-y-6">
             {postsLoading ? (
               Array.from({ length: 3 }).map((_, i) => (
@@ -136,54 +143,16 @@ export default function Feed() {
                   key={post.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
+                  transition={{ delay: index * 0.07 }}
                 >
-                  <Card className="border-primary/10 overflow-hidden hover:shadow-md transition-shadow">
-                    <CardHeader className="flex flex-row items-start gap-4 pb-4">
-                      <Avatar className="h-10 w-10 border border-border">
-                        {post.authorAvatarUrl ? (
-                          <AvatarImage src={post.authorAvatarUrl} alt={post.authorName} className="object-cover" />
-                        ) : null}
-                        <AvatarFallback className="bg-primary text-primary-foreground">{post.authorName.substring(0, 2).toUpperCase()}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 flex flex-col">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between">
-                          <span className="font-semibold text-foreground hover:underline cursor-pointer">
-                            {post.authorName}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {format(new Date(post.createdAt), "MMM d, h:mm a")}
-                          </span>
-                        </div>
-                        <span className="text-sm text-muted-foreground">
-                          {post.authorCourse} {post.communityName && `• em ${post.communityName}`}
-                        </span>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pb-4">
-                      <p className="text-foreground whitespace-pre-wrap">{post.content}</p>
-                    </CardContent>
-                    <CardFooter className="flex justify-between border-t bg-muted/20 py-3">
-                      <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary rounded-full">
-                        <Heart className="mr-2 h-4 w-4" />
-                        {post.likesCount}
-                      </Button>
-                      <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary rounded-full">
-                        <MessageCircle className="mr-2 h-4 w-4" />
-                        {post.commentsCount}
-                      </Button>
-                      <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary rounded-full">
-                        <Share2 className="mr-2 h-4 w-4" />
-                        Compartilhar
-                      </Button>
-                    </CardFooter>
-                  </Card>
+                  <PostCard post={post} />
                 </motion.div>
               ))
             )}
           </div>
         </div>
 
+        {/* Sidebar */}
         <div className="lg:col-span-4 space-y-6">
           <Card className="border-primary/10 bg-primary text-primary-foreground">
             <CardHeader className="pb-2">
@@ -223,37 +192,61 @@ export default function Feed() {
 
           <Card className="border-primary/10">
             <CardHeader>
-              <h3 className="font-bold text-foreground">Atividade Recente</h3>
+              <h3 className="font-bold text-foreground flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-primary" />
+                Atividade Recente
+              </h3>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {activityLoading ? (
-                  Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="flex gap-3">
-                      <Skeleton className="h-8 w-8 rounded-full" />
-                      <div className="space-y-2 flex-1">
-                        <Skeleton className="h-3 w-full" />
-                        <Skeleton className="h-2 w-1/2" />
+                {activityLoading
+                  ? Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="flex gap-3">
+                        <Skeleton className="h-8 w-8 rounded-full" />
+                        <div className="space-y-2 flex-1">
+                          <Skeleton className="h-3 w-full" />
+                          <Skeleton className="h-2 w-1/2" />
+                        </div>
                       </div>
-                    </div>
-                  ))
-                ) : activity?.map((item) => (
-                  <div key={item.id} className="flex gap-3 text-sm">
-                    <Avatar className="h-8 w-8 border">
-                      {item.actorAvatarUrl ? (
-                        <AvatarImage src={item.actorAvatarUrl} alt={item.actorName} className="object-cover" />
-                      ) : null}
-                      <AvatarFallback className="text-xs bg-secondary/20 text-secondary-foreground">{item.actorName.substring(0, 2).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="text-foreground">
-                        <span className="font-medium">{item.actorName}</span> {item.description}
-                      </p>
-                      <span className="text-xs text-muted-foreground">{format(new Date(item.createdAt), "MMM d")}</span>
-                    </div>
-                  </div>
-                ))}
+                    ))
+                  : activity?.map((item) => (
+                      <div key={item.id} className="flex gap-3 text-sm">
+                        <Avatar className="h-8 w-8 border">
+                          {item.actorAvatarUrl ? (
+                            <AvatarImage
+                              src={item.actorAvatarUrl}
+                              alt={item.actorName}
+                              className="object-cover"
+                            />
+                          ) : null}
+                          <AvatarFallback className="text-xs bg-secondary/20 text-secondary-foreground">
+                            {item.actorName.substring(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="text-foreground">
+                            <span className="font-medium">{item.actorName}</span>{" "}
+                            {item.description}
+                          </p>
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(item.createdAt), "d MMM")}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-primary/10">
+            <CardHeader className="pb-2">
+              <h3 className="font-bold text-foreground flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" />
+                Explorar
+              </h3>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm text-muted-foreground">
+              <p>Conecte-se com colegas, entre em comunidades e participe de eventos.</p>
             </CardContent>
           </Card>
         </div>

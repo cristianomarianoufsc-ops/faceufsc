@@ -62,6 +62,23 @@ export interface PostInput {
   communityId?: number | null;
 }
 
+export interface Comment {
+  id: number;
+  postId: number;
+  authorId: number;
+  authorName: string;
+  /** @nullable */
+  authorAvatarUrl?: string | null;
+  authorCourse: string;
+  content: string;
+  createdAt: string;
+}
+
+export interface CommentInput {
+  /** @minLength 1 */
+  content: string;
+}
+
 export type CommunityCategory = typeof CommunityCategory[keyof typeof CommunityCategory];
 
 
@@ -91,6 +108,17 @@ export interface CommunityInput {
   name: string;
   description: string;
   category: string;
+}
+
+export interface CommunityMember {
+  id: number;
+  userId: number;
+  name: string;
+  /** @nullable */
+  avatarUrl?: string | null;
+  course: string;
+  role: string;
+  joinedAt: string;
 }
 
 export interface JoinInput {
@@ -174,7 +202,6 @@ export type ConnectionStatusProperty = typeof ConnectionStatusProperty[keyof typ
 export const ConnectionStatusProperty = {
   pending: 'pending',
   accepted: 'accepted',
-  rejected: 'rejected',
 } as const;
 
 export interface Connection {

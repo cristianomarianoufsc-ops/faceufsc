@@ -8,9 +8,12 @@
 
 export * from './activityItem';
 export * from './activityItemType';
+export * from './comment';
+export * from './commentInput';
 export * from './community';
 export * from './communityCategory';
 export * from './communityInput';
+export * from './communityMember';
 export * from './connection';
 export * from './connectionAction';
 export * from './connectionActionAction';
