@@ -2,7 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { connectionsTable, usersTable } from "@workspace/db";
 import { eq, or, and, sql } from "drizzle-orm";
-import { z } from "zod";
+import { z, ZodError } from "zod";
 import { verifyToken, extractToken } from "../lib/jwt";
 
 const router = Router();
@@ -115,11 +115,10 @@ router.get("/connections/status/:userId", async (req, res): Promise<void> => {
       return;
     }
 
+    // Rows are only kept as "pending" or "accepted" — rejected rows are deleted.
     let status: string;
     if (conn.status === "accepted") {
       status = "connected";
-    } else if (conn.status === "rejected") {
-      status = "none";
     } else if (conn.requesterId === myId) {
       status = "pending_sent";
     } else {
@@ -139,7 +138,7 @@ router.post("/connections", async (req, res): Promise<void> => {
   if (!userId) { res.status(401).json({ error: "Não autenticado." }); return; }
 
   try {
-    const { receiverId } = z.object({ receiverId: z.number().int() }).parse(req.body);
+    const { receiverId } = z.object({ receiverId: z.number().int().positive() }).parse(req.body);
 
     if (receiverId === userId) {
       res.status(400).json({ error: "Não pode se conectar consigo mesmo." });
@@ -170,6 +169,10 @@ router.post("/connections", async (req, res): Promise<void> => {
 
     res.status(201).json(formatConn(conn, requester, receiver));
   } catch (err) {
+    if (err instanceof ZodError) {
+      res.status(400).json({ error: "Dados inválidos." });
+      return;
+    }
     req.log.error(err);
     res.status(500).json({ error: "Internal server error" });
   }
@@ -182,6 +185,8 @@ router.patch("/connections/:id", async (req, res): Promise<void> => {
 
   try {
     const id = parseInt(req.params.id);
+    if (isNaN(id)) { res.status(400).json({ error: "ID inválido." }); return; }
+
     const { action } = z.object({ action: z.enum(["accept", "reject"]) }).parse(req.body);
 
     const [conn] = await db.select().from(connectionsTable).where(eq(connectionsTable.id, id));
@@ -189,37 +194,60 @@ router.patch("/connections/:id", async (req, res): Promise<void> => {
     if (conn.receiverId !== userId) { res.status(403).json({ error: "Sem permissão." }); return; }
     if (conn.status !== "pending") { res.status(400).json({ error: "Pedido não está pendente." }); return; }
 
-    const newStatus = action === "accept" ? "accepted" : "rejected";
-    const [updated] = await db.update(connectionsTable)
-      .set({ status: newStatus, updatedAt: new Date() })
-      .where(eq(connectionsTable.id, id))
-      .returning();
-
     if (action === "accept") {
-      await db.update(usersTable)
-        .set({ connectionsCount: sql`${usersTable.connectionsCount} + 1` })
-        .where(eq(usersTable.id, conn.requesterId));
-      await db.update(usersTable)
-        .set({ connectionsCount: sql`${usersTable.connectionsCount} + 1` })
-        .where(eq(usersTable.id, conn.receiverId));
-    }
+      // Use a transaction + conditional update to prevent double-processing race conditions
+      let updated: typeof connectionsTable.$inferSelect | undefined;
 
-    const requester = await getUserRow(updated.requesterId);
-    const receiver = await getUserRow(updated.receiverId);
-    res.json(formatConn(updated, requester, receiver));
+      await db.transaction(async (tx) => {
+        const [row] = await tx.update(connectionsTable)
+          .set({ status: "accepted", updatedAt: new Date() })
+          .where(and(eq(connectionsTable.id, id), eq(connectionsTable.status, "pending")))
+          .returning();
+
+        if (!row) return; // Concurrent request already processed it
+        updated = row;
+
+        await tx.update(usersTable)
+          .set({ connectionsCount: sql`${usersTable.connectionsCount} + 1` })
+          .where(eq(usersTable.id, conn.requesterId));
+        await tx.update(usersTable)
+          .set({ connectionsCount: sql`${usersTable.connectionsCount} + 1` })
+          .where(eq(usersTable.id, conn.receiverId));
+      });
+
+      if (!updated) {
+        res.status(409).json({ error: "Pedido já foi processado." });
+        return;
+      }
+
+      res.status(204).send();
+    } else {
+      // Reject: delete the row so the requester can send a new request later
+      await db.transaction(async (tx) => {
+        await tx.delete(connectionsTable)
+          .where(and(eq(connectionsTable.id, id), eq(connectionsTable.status, "pending")));
+      });
+
+      res.status(204).send();
+    }
   } catch (err) {
+    if (err instanceof ZodError) {
+      res.status(400).json({ error: "Dados inválidos." });
+      return;
+    }
     req.log.error(err);
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// DELETE /connections/:id — cancel request or remove connection
+// DELETE /connections/:id — cancel request or remove accepted connection
 router.delete("/connections/:id", async (req, res): Promise<void> => {
   const userId = getAuthUserId(req);
   if (!userId) { res.status(401).json({ error: "Não autenticado." }); return; }
 
   try {
     const id = parseInt(req.params.id);
+    if (isNaN(id)) { res.status(400).json({ error: "ID inválido." }); return; }
 
     const [conn] = await db.select().from(connectionsTable).where(eq(connectionsTable.id, id));
     if (!conn) { res.status(404).json({ error: "Conexão não encontrada." }); return; }
@@ -227,17 +255,19 @@ router.delete("/connections/:id", async (req, res): Promise<void> => {
     const isParticipant = conn.requesterId === userId || conn.receiverId === userId;
     if (!isParticipant) { res.status(403).json({ error: "Sem permissão." }); return; }
 
-    await db.delete(connectionsTable).where(eq(connectionsTable.id, id));
+    await db.transaction(async (tx) => {
+      await tx.delete(connectionsTable).where(eq(connectionsTable.id, id));
 
-    // Decrement counts only if it was an accepted connection
-    if (conn.status === "accepted") {
-      await db.update(usersTable)
-        .set({ connectionsCount: sql`GREATEST(${usersTable.connectionsCount} - 1, 0)` })
-        .where(eq(usersTable.id, conn.requesterId));
-      await db.update(usersTable)
-        .set({ connectionsCount: sql`GREATEST(${usersTable.connectionsCount} - 1, 0)` })
-        .where(eq(usersTable.id, conn.receiverId));
-    }
+      // Only decrement if it was an accepted connection
+      if (conn.status === "accepted") {
+        await tx.update(usersTable)
+          .set({ connectionsCount: sql`GREATEST(${usersTable.connectionsCount} - 1, 0)` })
+          .where(eq(usersTable.id, conn.requesterId));
+        await tx.update(usersTable)
+          .set({ connectionsCount: sql`GREATEST(${usersTable.connectionsCount} - 1, 0)` })
+          .where(eq(usersTable.id, conn.receiverId));
+      }
+    });
 
     res.status(204).send();
   } catch (err) {

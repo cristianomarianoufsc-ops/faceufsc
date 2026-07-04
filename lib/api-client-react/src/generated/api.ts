@@ -1522,9 +1522,9 @@ export const getUpdateConnectionUrl = (id: number,) => {
  * @summary Accept or reject a connection request
  */
 export const updateConnection = async (id: number,
-    connectionAction: ConnectionAction, options?: RequestInit): Promise<Connection> => {
+    connectionAction: ConnectionAction, options?: RequestInit): Promise<void> => {
 
-  return customFetch<Connection>(getUpdateConnectionUrl(id),
+  return customFetch<void>(getUpdateConnectionUrl(id),
   {
     ...options,
     method: 'PATCH',

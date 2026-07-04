@@ -401,19 +401,7 @@ export const UpdateConnectionBody = zod.object({
   "action": zod.enum(['accept', 'reject'])
 })
 
-export const UpdateConnectionResponse = zod.object({
-  "id": zod.number(),
-  "requesterId": zod.number(),
-  "receiverId": zod.number(),
-  "status": zod.enum(['pending', 'accepted', 'rejected']),
-  "requesterName": zod.string(),
-  "requesterAvatarUrl": zod.string().nullish(),
-  "requesterCourse": zod.string(),
-  "receiverName": zod.string(),
-  "receiverAvatarUrl": zod.string().nullish(),
-  "receiverCourse": zod.string(),
-  "createdAt": zod.string()
-})
+export const UpdateConnectionResponse = zod.void()
 
 
 /**

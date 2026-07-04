@@ -382,12 +382,8 @@ paths:
             schema:
               $ref: "#/components/schemas/ConnectionAction"
       responses:
-        "200":
+        "204":
           description: Connection updated
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Connection"
     delete:
       operationId: deleteConnection
       tags: [connections]
