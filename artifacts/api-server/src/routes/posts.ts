@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { postsTable, commentsTable, usersTable, communitiesTable } from "@workspace/db";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc, sql, and } from "drizzle-orm";
 import { z, ZodError } from "zod";
 import { verifyToken, extractToken } from "../lib/jwt";
 
@@ -13,31 +13,49 @@ function getAuthUserId(req: any): number | null {
   return verifyToken(token)?.userId ?? null;
 }
 
-router.get("/posts", async (req, res) => {
+router.get("/posts", async (req, res): Promise<void> => {
   try {
-    const { userId, communityId } = req.query as { userId?: string; communityId?: string };
+    const { userId: userIdRaw, communityId: communityIdRaw } = req.query as {
+      userId?: string;
+      communityId?: string;
+    };
 
-    // Join with users to always get the current (live) avatar URL
+    // Validate optional query params
+    const userId = userIdRaw !== undefined ? parseInt(userIdRaw) : undefined;
+    const communityId = communityIdRaw !== undefined ? parseInt(communityIdRaw) : undefined;
+    if (userId !== undefined && isNaN(userId)) {
+      res.status(400).json({ error: "userId deve ser um número inteiro." });
+      return;
+    }
+    if (communityId !== undefined && isNaN(communityId)) {
+      res.status(400).json({ error: "communityId deve ser um número inteiro." });
+      return;
+    }
+
+    // Build WHERE conditions in SQL for performance
+    const conditions = [];
+    if (userId !== undefined) conditions.push(eq(postsTable.authorId, userId));
+    if (communityId !== undefined) conditions.push(eq(postsTable.communityId, communityId));
+
+    // LEFT JOIN with users to always return the author's current (live) avatar URL.
+    // When the user row exists, use their current avatarUrl (even if null — meaning they
+    // removed it). Only fall back to the post's stored snapshot when the user was deleted.
     const rows = await db
       .select({
         post: postsTable,
-        authorAvatarUrl: usersTable.avatarUrl,
+        currentAvatarUrl: usersTable.avatarUrl,
+        userExists: usersTable.id,
       })
       .from(postsTable)
       .leftJoin(usersTable, eq(postsTable.authorId, usersTable.id))
+      .where(conditions.length ? and(...conditions) : undefined)
       .orderBy(desc(postsTable.createdAt));
 
-    let results = rows;
-    if (userId) {
-      results = results.filter(r => r.post.authorId === parseInt(userId));
-    }
-    if (communityId) {
-      results = results.filter(r => r.post.communityId === parseInt(communityId));
-    }
-
-    res.json(results.map(({ post, authorAvatarUrl }) => ({
+    res.json(rows.map(({ post, currentAvatarUrl, userExists }) => ({
       ...post,
-      authorAvatarUrl: authorAvatarUrl ?? post.authorAvatarUrl,
+      // userExists non-null means the JOIN matched — use live avatarUrl (may be null)
+      // userExists null means the user was deleted — fall back to post snapshot
+      authorAvatarUrl: userExists !== null ? currentAvatarUrl : post.authorAvatarUrl,
       createdAt: post.createdAt.toISOString(),
     })));
   } catch (err) {
