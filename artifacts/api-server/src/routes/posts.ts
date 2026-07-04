@@ -16,14 +16,30 @@ function getAuthUserId(req: any): number | null {
 router.get("/posts", async (req, res) => {
   try {
     const { userId, communityId } = req.query as { userId?: string; communityId?: string };
-    let posts = await db.select().from(postsTable).orderBy(desc(postsTable.createdAt));
+
+    // Join with users to always get the current (live) avatar URL
+    const rows = await db
+      .select({
+        post: postsTable,
+        authorAvatarUrl: usersTable.avatarUrl,
+      })
+      .from(postsTable)
+      .leftJoin(usersTable, eq(postsTable.authorId, usersTable.id))
+      .orderBy(desc(postsTable.createdAt));
+
+    let results = rows;
     if (userId) {
-      posts = posts.filter(p => p.authorId === parseInt(userId));
+      results = results.filter(r => r.post.authorId === parseInt(userId));
     }
     if (communityId) {
-      posts = posts.filter(p => p.communityId === parseInt(communityId));
+      results = results.filter(r => r.post.communityId === parseInt(communityId));
     }
-    res.json(posts.map(p => ({ ...p, createdAt: p.createdAt.toISOString() })));
+
+    res.json(results.map(({ post, authorAvatarUrl }) => ({
+      ...post,
+      authorAvatarUrl: authorAvatarUrl ?? post.authorAvatarUrl,
+      createdAt: post.createdAt.toISOString(),
+    })));
   } catch (err) {
     req.log.error(err);
     res.status(500).json({ error: "Internal server error" });
