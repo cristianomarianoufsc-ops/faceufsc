@@ -33,16 +33,20 @@ async function runMigrations() {
     ALTER TABLE communities ADD COLUMN IF NOT EXISTS is_official BOOLEAN NOT NULL DEFAULT FALSE
   `);
 
-  // Add UNIQUE constraint on communities.name — required for ON CONFLICT (name) in seed
+  // De-duplicate communities by name (keep lowest id) so the UNIQUE constraint never fails.
+  // In practice there should be no duplicates, but this makes the migration safe regardless.
   await db.execute(sql`
-    DO $ BEGIN
-      IF NOT EXISTS (
-        SELECT 1 FROM pg_constraint
-        WHERE conname = 'communities_name_key' AND conrelid = 'communities'::regclass
-      ) THEN
-        ALTER TABLE communities ADD CONSTRAINT communities_name_key UNIQUE (name);
-      END IF;
-    END $
+    DELETE FROM communities
+    WHERE id NOT IN (
+      SELECT MIN(id) FROM communities GROUP BY name
+    )
+  `);
+
+  // Add UNIQUE constraint on communities.name — required for ON CONFLICT (name) in seed.
+  // ADD CONSTRAINT IF NOT EXISTS is standard Postgres 9.x+ syntax.
+  await db.execute(sql`
+    ALTER TABLE communities
+      ADD CONSTRAINT IF NOT EXISTS communities_name_key UNIQUE (name)
   `);
 
   logger.info("Migrations OK");
