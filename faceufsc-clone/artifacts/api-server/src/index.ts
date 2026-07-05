@@ -1,7 +1,9 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { db } from "@workspace/db";
-import { sql } from "drizzle-orm";
+import { communitiesTable } from "@workspace/db";
+import { sql, eq } from "drizzle-orm";
+import { seedOfficialCommunities } from "./scripts/seed-communities";
 
 const rawPort = process.env["PORT"];
 
@@ -28,7 +30,22 @@ async function runMigrations() {
   logger.info("Migrations OK");
 }
 
+async function runSeedIfNeeded() {
+  const [existing] = await db
+    .select({ id: communitiesTable.id })
+    .from(communitiesTable)
+    .where(eq(communitiesTable.isOfficial, true))
+    .limit(1);
+
+  if (!existing) {
+    logger.info("Nenhuma comunidade oficial encontrada — executando seed...");
+    await seedOfficialCommunities();
+    logger.info("Seed de comunidades oficiais concluído.");
+  }
+}
+
 runMigrations()
+  .then(runSeedIfNeeded)
   .then(() => {
     app.listen(port, (err) => {
       if (err) {
@@ -39,6 +56,6 @@ runMigrations()
     });
   })
   .catch((err) => {
-    logger.error({ err }, "Migration failed");
+    logger.error({ err }, "Migration/seed failed");
     process.exit(1);
   });

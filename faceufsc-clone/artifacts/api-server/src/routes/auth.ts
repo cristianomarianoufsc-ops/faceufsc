@@ -6,6 +6,7 @@ import { usersTable, emailVerificationsTable } from "@workspace/db";
 import { eq, lt } from "drizzle-orm";
 import { signToken, verifyToken, extractToken } from "../lib/jwt";
 import { getSetting } from "./admin";
+import { autoJoinOfficialCommunities } from "../lib/auto-join-communities";
 
 const router = Router();
 
@@ -107,19 +108,25 @@ router.post("/auth/register", async (req, res): Promise<void> => {
         communitiesCount: 0,
       }).returning();
 
+      // Auto-join official communities for this user's course and department
+      await autoJoinOfficialCommunities(user.id, user.course, user.department);
+
+      // Re-fetch to get updated communitiesCount
+      const [updated] = await db.select().from(usersTable).where(eq(usersTable.id, user.id));
+
       const token = signToken(user.id);
       res.status(201).json({
         token,
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        course: user.course,
-        department: user.department,
-        role: user.role,
-        entryYear: user.entryYear,
+        id: updated.id,
+        name: updated.name,
+        email: updated.email,
+        course: updated.course,
+        department: updated.department,
+        role: updated.role,
+        entryYear: updated.entryYear,
         skills: [],
-        connectionsCount: 0,
-        communitiesCount: 0,
+        connectionsCount: updated.connectionsCount,
+        communitiesCount: updated.communitiesCount,
       });
       return;
     }
@@ -195,20 +202,26 @@ router.get("/auth/verify-email", async (req, res): Promise<void> => {
 
     await db.delete(emailVerificationsTable).where(eq(emailVerificationsTable.token, token));
 
+    // Auto-join official communities for this user's course and department
+    await autoJoinOfficialCommunities(user.id, user.course, user.department);
+
+    // Re-fetch to get updated communitiesCount
+    const [updatedUser] = await db.select().from(usersTable).where(eq(usersTable.id, user.id));
+
     const jwtToken = signToken(user.id);
 
     res.status(201).json({
       token: jwtToken,
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      course: user.course,
-      department: user.department,
-      role: user.role,
-      entryYear: user.entryYear,
+      id: updatedUser.id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      course: updatedUser.course,
+      department: updatedUser.department,
+      role: updatedUser.role,
+      entryYear: updatedUser.entryYear,
       skills: [],
-      connectionsCount: 0,
-      communitiesCount: 0,
+      connectionsCount: updatedUser.connectionsCount,
+      communitiesCount: updatedUser.communitiesCount,
     });
   } catch (err) {
     req.log.error(err);

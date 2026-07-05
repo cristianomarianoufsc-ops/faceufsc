@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -10,6 +10,7 @@ export const communitiesTable = pgTable("communities", {
   membersCount: integer("members_count").notNull().default(0),
   postsCount: integer("posts_count").notNull().default(0),
   imageUrl: text("image_url"),
+  isOfficial: boolean("is_official").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
