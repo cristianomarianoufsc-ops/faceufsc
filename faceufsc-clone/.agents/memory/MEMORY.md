@@ -1,0 +1,2 @@
+- [JWT Auth Decision](jwt-auth.md) — usamos JWT (não session cookie) para evitar bloqueio de Set-Cookie em Vercel→Railway cross-origin
+- [Railway+Vercel deploy](railway-vercel-deploy.md) — Railway API + Vercel frontend, env config, gotchas de URL

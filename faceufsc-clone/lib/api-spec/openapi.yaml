@@ -1,0 +1,863 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: FaceUfsc Social Network API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: users
+    description: User profiles
+  - name: posts
+    description: Feed posts
+  - name: communities
+    description: Communities/groups
+  - name: events
+    description: University events
+  - name: feed
+    description: Activity feed
+  - name: connections
+    description: User connections
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List users
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: course
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+
+  /users/{id}:
+    get:
+      operationId: getUser
+      tags: [users]
+      summary: Get user profile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /posts:
+    get:
+      operationId: listPosts
+      tags: [posts]
+      summary: Get feed posts
+      parameters:
+        - name: userId
+          in: query
+          schema:
+            type: integer
+        - name: communityId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Post"
+    post:
+      operationId: createPost
+      tags: [posts]
+      summary: Create a new post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostInput"
+      responses:
+        "201":
+          description: Post created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+
+  /posts/{id}:
+    delete:
+      operationId: deletePost
+      tags: [posts]
+      summary: Delete a post
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Post deleted
+
+  /posts/{id}/comments:
+    get:
+      operationId: listComments
+      tags: [posts]
+      summary: List comments for a post
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of comments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Comment"
+    post:
+      operationId: createComment
+      tags: [posts]
+      summary: Add a comment to a post
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentInput"
+      responses:
+        "201":
+          description: Comment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comment"
+
+  /communities:
+    get:
+      operationId: listCommunities
+      tags: [communities]
+      summary: List communities
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: category
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of communities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Community"
+    post:
+      operationId: createCommunity
+      tags: [communities]
+      summary: Create a community
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommunityInput"
+      responses:
+        "201":
+          description: Community created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Community"
+
+  /communities/{id}:
+    get:
+      operationId: getCommunity
+      tags: [communities]
+      summary: Get community details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Community details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Community"
+
+  /communities/{id}/members:
+    get:
+      operationId: listCommunityMembers
+      tags: [communities]
+      summary: List members of a community
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of community members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CommunityMember"
+
+  /communities/{id}/join:
+    post:
+      operationId: joinCommunity
+      tags: [communities]
+      summary: Join a community
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JoinInput"
+      responses:
+        "200":
+          description: Joined community
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Community"
+
+  /events:
+    get:
+      operationId: listEvents
+      tags: [events]
+      summary: List upcoming events
+      responses:
+        "200":
+          description: List of events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Event"
+    post:
+      operationId: createEvent
+      tags: [events]
+      summary: Create an event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventInput"
+      responses:
+        "201":
+          description: Event created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+
+  /events/{id}:
+    get:
+      operationId: getEvent
+      tags: [events]
+      summary: Get event details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Event details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+
+  /feed/stats:
+    get:
+      operationId: getFeedStats
+      tags: [feed]
+      summary: Get platform statistics
+      responses:
+        "200":
+          description: Platform stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeedStats"
+
+  /feed/recent:
+    get:
+      operationId: getRecentActivity
+      tags: [feed]
+      summary: Get recent activity across the platform
+      responses:
+        "200":
+          description: Recent activity items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityItem"
+
+  /connections:
+    get:
+      operationId: listConnections
+      tags: [connections]
+      summary: List my accepted connections
+      responses:
+        "200":
+          description: List of accepted connections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Connection"
+    post:
+      operationId: sendConnectionRequest
+      tags: [connections]
+      summary: Send a connection request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConnectionRequest"
+      responses:
+        "201":
+          description: Connection request sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Connection"
+
+  /connections/requests:
+    get:
+      operationId: listConnectionRequests
+      tags: [connections]
+      summary: List pending connection requests I received
+      responses:
+        "200":
+          description: List of pending requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Connection"
+
+  /connections/status/{userId}:
+    get:
+      operationId: getConnectionStatus
+      tags: [connections]
+      summary: Get connection status with a specific user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Connection status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectionStatus"
+
+  /connections/{id}:
+    patch:
+      operationId: updateConnection
+      tags: [connections]
+      summary: Accept or reject a connection request
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConnectionAction"
+      responses:
+        "204":
+          description: Connection updated
+    delete:
+      operationId: deleteConnection
+      tags: [connections]
+      summary: Cancel a request or remove a connection
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Connection removed
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        avatarUrl:
+          type: ["string", "null"]
+        course:
+          type: string
+        department:
+          type: string
+        entryYear:
+          type: integer
+        bio:
+          type: ["string", "null"]
+        role:
+          type: string
+          enum: [student, professor, staff, alumni]
+        skills:
+          type: array
+          items:
+            type: string
+        connectionsCount:
+          type: integer
+        communitiesCount:
+          type: integer
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - email
+        - course
+        - department
+        - entryYear
+        - role
+        - skills
+        - connectionsCount
+        - communitiesCount
+        - createdAt
+
+    Post:
+      type: object
+      properties:
+        id:
+          type: integer
+        content:
+          type: string
+        authorId:
+          type: integer
+        authorName:
+          type: string
+        authorAvatarUrl:
+          type: ["string", "null"]
+        authorCourse:
+          type: string
+        communityId:
+          type: ["integer", "null"]
+        communityName:
+          type: ["string", "null"]
+        likesCount:
+          type: integer
+        commentsCount:
+          type: integer
+        createdAt:
+          type: string
+      required:
+        - id
+        - content
+        - authorId
+        - authorName
+        - authorCourse
+        - likesCount
+        - commentsCount
+        - createdAt
+
+    PostInput:
+      type: object
+      properties:
+        content:
+          type: string
+          minLength: 1
+        authorId:
+          type: integer
+        communityId:
+          type: ["integer", "null"]
+      required:
+        - content
+        - authorId
+
+    Comment:
+      type: object
+      properties:
+        id:
+          type: integer
+        postId:
+          type: integer
+        authorId:
+          type: integer
+        authorName:
+          type: string
+        authorAvatarUrl:
+          type: ["string", "null"]
+        authorCourse:
+          type: string
+        content:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - postId
+        - authorId
+        - authorName
+        - authorCourse
+        - content
+        - createdAt
+
+    CommentInput:
+      type: object
+      properties:
+        content:
+          type: string
+          minLength: 1
+      required:
+        - content
+
+    Community:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+          enum: [course, research, sports, culture, housing, general]
+        membersCount:
+          type: integer
+        postsCount:
+          type: integer
+        imageUrl:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - description
+        - category
+        - membersCount
+        - postsCount
+        - createdAt
+
+    CommunityInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        category:
+          type: string
+      required:
+        - name
+        - description
+        - category
+
+    CommunityMember:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        name:
+          type: string
+        avatarUrl:
+          type: ["string", "null"]
+        course:
+          type: string
+        role:
+          type: string
+        joinedAt:
+          type: string
+      required:
+        - id
+        - userId
+        - name
+        - course
+        - role
+        - joinedAt
+
+    JoinInput:
+      type: object
+      properties:
+        userId:
+          type: integer
+      required:
+        - userId
+
+    Event:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        location:
+          type: string
+        date:
+          type: string
+        time:
+          type: string
+        organizer:
+          type: string
+        category:
+          type: string
+          enum: [lecture, workshop, cultural, sports, academic, social]
+        attendeesCount:
+          type: integer
+        maxAttendees:
+          type: ["integer", "null"]
+        imageUrl:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - title
+        - description
+        - location
+        - date
+        - time
+        - organizer
+        - category
+        - attendeesCount
+        - createdAt
+
+    EventInput:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        location:
+          type: string
+        date:
+          type: string
+        time:
+          type: string
+        organizer:
+          type: string
+        category:
+          type: string
+        maxAttendees:
+          type: ["integer", "null"]
+      required:
+        - title
+        - description
+        - location
+        - date
+        - time
+        - organizer
+        - category
+
+    FeedStats:
+      type: object
+      properties:
+        totalUsers:
+          type: integer
+        totalCommunities:
+          type: integer
+        totalPosts:
+          type: integer
+        totalEvents:
+          type: integer
+        activeStudents:
+          type: integer
+        activeProfessors:
+          type: integer
+      required:
+        - totalUsers
+        - totalCommunities
+        - totalPosts
+        - totalEvents
+        - activeStudents
+        - activeProfessors
+
+    ActivityItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          enum: [post, event, community_join, connection]
+        actorName:
+          type: string
+        actorAvatarUrl:
+          type: ["string", "null"]
+        description:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - type
+        - actorName
+        - description
+        - createdAt
+
+    Connection:
+      type: object
+      properties:
+        id:
+          type: integer
+        requesterId:
+          type: integer
+        receiverId:
+          type: integer
+        status:
+          type: string
+          enum: [pending, accepted]
+        requesterName:
+          type: string
+        requesterAvatarUrl:
+          type: ["string", "null"]
+        requesterCourse:
+          type: string
+        receiverName:
+          type: string
+        receiverAvatarUrl:
+          type: ["string", "null"]
+        receiverCourse:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - requesterId
+        - receiverId
+        - status
+        - requesterName
+        - requesterCourse
+        - receiverName
+        - receiverCourse
+        - createdAt
+
+    ConnectionStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [none, pending_sent, pending_received, connected]
+        connectionId:
+          type: ["integer", "null"]
+      required:
+        - status
+        - connectionId
+
+    ConnectionRequest:
+      type: object
+      properties:
+        receiverId:
+          type: integer
+      required:
+        - receiverId
+
+    ConnectionAction:
+      type: object
+      properties:
+        action:
+          type: string
+          enum: [accept, reject]
+      required:
+        - action

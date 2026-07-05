@@ -1,0 +1,45 @@
+Railway deployment failed — Build Error
+
+Regenerate the pnpm lockfile by running "pnpm install" locally and committing the updated pnpm-lock.yaml. The build failed because the overrides configuration in pnpm-workspace.yaml was restructured (react and react-dom moved from catalogs to overrides, plus many new platform-specific exclusions added) but pnpm-lock.yaml was not properly regenerated to match. The frozen install step correctly rejects the mismatched lockfile.
+
+Repository: https://github.com/cristianomarianoufsc-ops/faceufsc
+Branch: main · Commit: db74a5a — Update API server to include avatar endpoint and new assets
+
+Add a comment to users.ts in the api-server directory and include new image assets.
+
+Replit-Commit-Author: Agent
+Replit-Commit-Session-Id: 5d171e41-9220-40fb-945f-a591f9994ed3
+Replit-Commit-Checkpoint-Type: full_checkpoint
+Replit-Commit-Event-Id: e06b1ae8-ed7f-4f30-b3db-4cb2e340afb2
+Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/ccb078af-c604-4fd7-a891-ac817d3d3e6b/5d171e41-9220-40fb-945f-a591f9994ed3/wrUyKtq
+Replit-Helium-Checkpoint-Created: true
+Deployment ID: f1cb3459-edb4-4f42-a83a-0074e1a4f83d
+Service ID: 0b87a965-0307-4144-bd68-4caf8b8047fe
+Environment ID: 435b4498-d221-4d9e-b32d-ec321bf79dcd
+
+---
+
+## Problem
+The @workspace/api-server service fails during the BUILD stage with ERR_PNPM_LOCKFILE_CONFIG_MISMATCH. The Railpack install step runs `pnpm i --frozen-lockfile`, which rejects the install because the overrides configuration in pnpm-lock.yaml does not match the overrides in pnpm-workspace.yaml.
+
+Build log error:
+```
+ERR_PNPM_LOCKFILE_CONFIG_MISMATCH  Cannot proceed with the frozen installation. The current "overrides" configuration doesn't match the value found in the lockfile
+Update your lockfile using "pnpm install --no-frozen-lockfile"
+```
+
+The build command comes from railway.toml: `pnpm install --frozen-lockfile && pnpm --filter @workspace/api-server run build`. The Railpack auto-detected install step also runs `pnpm i --frozen-lockfile`.
+
+## Diagnosis
+Between the last successful deployment (commit 2c1f7a64) and this commit, pnpm-workspace.yaml was significantly restructured by the Replit Agent:
+- `react: 19.1.0` and `react-dom: 19.1.0` were moved from the `catalogs` section to the `overrides` section
+- Many new platform-specific exclusion overrides were added (@expo/ngrok-bin, @tailwindcss/oxide, lightningcss, rollup sub-packages set to '-')
+- The minimumReleaseAge section was reorganized
+
+The pnpm-lock.yaml was also modified (1032 additions, 136 deletions) but the changes are incomplete — the lockfile's internal overrides hash does not match the computed hash from the current pnpm-workspace.yaml overrides. This is a common issue when lockfiles are partially hand-edited or generated inconsistently.
+
+## Fix
+1. **File:** `pnpm-lock.yaml` (repo root)
+2. **Action:** Run `pnpm install` (without `--frozen-lockfile`) in the repo root to regenerate the lockfile. This must be done in a local development environment or in Replit — it cannot be accomplished by editing the file directly.
+3. **Commit** the regenerated `pnpm-lock.yaml` to the `main` branch.
+4. This resolves the issue because the regenerated lockfile will have the correct overrides hash matching the current pnpm-workspace.yaml configuration.
