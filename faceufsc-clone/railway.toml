@@ -8,3 +8,4 @@ healthcheckPath = "/api/healthz"
 healthcheckTimeout = 30
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
+watchPatterns = ["/artifacts/api-server/**", "/lib/**", "/railway.toml"]
