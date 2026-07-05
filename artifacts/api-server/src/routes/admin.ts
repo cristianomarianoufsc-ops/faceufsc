@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { appSettingsTable, usersTable, postsTable } from "@workspace/db";
+import { appSettingsTable, usersTable, postsTable, communitiesTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
+import { generateAllCommunities } from "../lib/seed-communities";
 
 const router = Router();
 
@@ -132,6 +133,51 @@ router.delete("/admin/posts/:id", requireAdmin, async (req, res): Promise<void> 
   } catch (err) {
     req.log.error(err);
     res.status(500).json({ error: "Erro interno." });
+  }
+});
+
+// ─── Seed de comunidades fixas da UFSC ───────────────────────────────────────
+// POST /admin/seed-communities
+// Idempotente: usa onConflictDoNothing na constraint unique de name.
+router.post("/admin/seed-communities", requireAdmin, async (req, res): Promise<void> => {
+  try {
+    const allCommunities = generateAllCommunities();
+
+    let created = 0;
+    const BATCH_SIZE = 50;
+
+    for (let i = 0; i < allCommunities.length; i += BATCH_SIZE) {
+      const batch = allCommunities.slice(i, i + BATCH_SIZE);
+      const result = await db.insert(communitiesTable).values(
+        batch.map(c => ({
+          name: c.name,
+          description: c.description,
+          category: c.category,
+          isFixed: c.isFixed,
+          membersCount: 0,
+          postsCount: 0,
+        }))
+      ).onConflictDoNothing({ target: communitiesTable.name }).returning({ id: communitiesTable.id });
+      created += result.length;
+    }
+
+    req.log.info({ created }, "Seed de comunidades fixas concluído");
+    res.json({
+      created,
+      total: allCommunities.length,
+      message: `${created} comunidades novas criadas (${allCommunities.length - created} já existiam).`,
+      breakdown: {
+        campus: allCommunities.filter(c => c.category === "campus").length,
+        centro: allCommunities.filter(c => c.category === "centro").length,
+        moradia: allCommunities.filter(c => c.category === "moradia").length,
+        entidade: allCommunities.filter(c => c.category === "entidade").length,
+        curso: allCommunities.filter(c => c.category === "curso").length,
+        turma: allCommunities.filter(c => c.category === "turma").length,
+      },
+    });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Erro ao fazer seed das comunidades." });
   }
 });
 
