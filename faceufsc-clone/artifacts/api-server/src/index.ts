@@ -16,7 +16,7 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-const SEED_VERSION = "official-communities-v1";
+const SEED_VERSION = "official-communities-v2";
 
 async function runMigrations() {
   // Core settings table
@@ -31,6 +31,18 @@ async function runMigrations() {
   // Add is_official column if the DB predates this migration
   await db.execute(sql`
     ALTER TABLE communities ADD COLUMN IF NOT EXISTS is_official BOOLEAN NOT NULL DEFAULT FALSE
+  `);
+
+  // Add UNIQUE constraint on communities.name — required for ON CONFLICT (name) in seed
+  await db.execute(sql`
+    DO $ BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'communities_name_key' AND conrelid = 'communities'::regclass
+      ) THEN
+        ALTER TABLE communities ADD CONSTRAINT communities_name_key UNIQUE (name);
+      END IF;
+    END $
   `);
 
   logger.info("Migrations OK");
