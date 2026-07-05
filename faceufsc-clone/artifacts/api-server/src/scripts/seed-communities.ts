@@ -1,159 +1,179 @@
 /**
- * Seed script: creates all official UFSC communities and assigns
+ * Seed: creates all official UFSC communities (centers + courses) and assigns
  * existing users to their course + department communities.
  *
- * Run: pnpm --filter @workspace/api-server tsx src/scripts/seed-communities.ts
+ * - Uses INSERT … ON CONFLICT DO NOTHING for atomic, idempotent upserts.
+ * - Matching is done via canonical tags in the description field, normalized.
+ * - The caller (index.ts) guards against duplicate runs via app_settings lock.
+ *
+ * Run standalone: node --loader ts-node/esm src/scripts/seed-communities.ts
  */
 
 import { db } from "@workspace/db";
 import { communitiesTable, communityMembershipsTable, usersTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 
-// ─── Centros da UFSC ─────────────────────────────────────────────────────────
-const CENTERS = [
-  { name: "CTC", description: "Centro Tecnológico [dept:CTC]", category: "centro" },
-  { name: "CCS", description: "Centro de Ciências da Saúde [dept:CCS]", category: "centro" },
-  { name: "CFH", description: "Centro de Filosofia e Ciências Humanas [dept:CFH]", category: "centro" },
-  { name: "CCJ", description: "Centro de Ciências Jurídicas [dept:CCJ]", category: "centro" },
-  { name: "CCE", description: "Centro de Comunicação e Expressão [dept:CCE]", category: "centro" },
-  { name: "CCA", description: "Centro de Ciências Agrárias [dept:CCA]", category: "centro" },
-  { name: "CDS", description: "Centro de Desportos [dept:CDS]", category: "centro" },
-  { name: "CFM", description: "Centro de Ciências Físicas e Matemáticas [dept:CFM]", category: "centro" },
-  { name: "CSE", description: "Centro Socioeconômico [dept:CSE]", category: "centro" },
-  { name: "CED", description: "Centro de Ciências da Educação [dept:CED]", category: "centro" },
-  { name: "NDI", description: "Núcleo de Desenvolvimento Infantil [dept:NDI]", category: "centro" },
+// ─── Official UFSC centers ────────────────────────────────────────────────────
+const CENTERS: { name: string; description: string }[] = [
+  { name: "CTC", description: "Centro Tecnológico da UFSC [dept:CTC]" },
+  { name: "CCS", description: "Centro de Ciências da Saúde da UFSC [dept:CCS]" },
+  { name: "CFH", description: "Centro de Filosofia e Ciências Humanas da UFSC [dept:CFH]" },
+  { name: "CCJ", description: "Centro de Ciências Jurídicas da UFSC [dept:CCJ]" },
+  { name: "CCE", description: "Centro de Comunicação e Expressão da UFSC [dept:CCE]" },
+  { name: "CCA", description: "Centro de Ciências Agrárias da UFSC [dept:CCA]" },
+  { name: "CDS", description: "Centro de Desportos da UFSC [dept:CDS]" },
+  { name: "CFM", description: "Centro de Ciências Físicas e Matemáticas da UFSC [dept:CFM]" },
+  { name: "CSE", description: "Centro Socioeconômico da UFSC [dept:CSE]" },
+  { name: "CED", description: "Centro de Ciências da Educação da UFSC [dept:CED]" },
+  { name: "NDI", description: "Núcleo de Desenvolvimento Infantil da UFSC [dept:NDI]" },
 ];
 
-// ─── Cursos da UFSC ──────────────────────────────────────────────────────────
-const COURSES = [
+// ─── Official UFSC courses ────────────────────────────────────────────────────
+const COURSES: { name: string; description: string }[] = [
   // CTC
-  { name: "Ciência da Computação", description: "Curso de Ciência da Computação — CTC [course:Ciência da Computação]", category: "curso" },
-  { name: "Sistemas de Informação", description: "Curso de Sistemas de Informação — CTC [course:Sistemas de Informação]", category: "curso" },
-  { name: "Engenharia de Computação", description: "Curso de Engenharia de Computação — CTC [course:Engenharia de Computação]", category: "curso" },
-  { name: "Engenharia Elétrica", description: "Curso de Engenharia Elétrica — CTC [course:Engenharia Elétrica]", category: "curso" },
-  { name: "Engenharia Mecânica", description: "Curso de Engenharia Mecânica — CTC [course:Engenharia Mecânica]", category: "curso" },
-  { name: "Engenharia Civil", description: "Curso de Engenharia Civil — CTC [course:Engenharia Civil]", category: "curso" },
-  { name: "Engenharia Química", description: "Curso de Engenharia Química — CTC [course:Engenharia Química]", category: "curso" },
-  { name: "Engenharia de Controle e Automação", description: "Curso de Engenharia de Controle e Automação — CTC [course:Engenharia de Controle e Automação]", category: "curso" },
-  { name: "Engenharia de Materiais", description: "Curso de Engenharia de Materiais — CTC [course:Engenharia de Materiais]", category: "curso" },
-  { name: "Engenharia de Produção", description: "Curso de Engenharia de Produção — CTC [course:Engenharia de Produção]", category: "curso" },
-  { name: "Engenharia Sanitária e Ambiental", description: "Curso de Engenharia Sanitária e Ambiental — CTC [course:Engenharia Sanitária e Ambiental]", category: "curso" },
-  { name: "Arquitetura e Urbanismo", description: "Curso de Arquitetura e Urbanismo — CTC [course:Arquitetura e Urbanismo]", category: "curso" },
+  { name: "Ciência da Computação",               description: "Curso de Ciência da Computação — CTC [course:Ciência da Computação]" },
+  { name: "Sistemas de Informação",              description: "Curso de Sistemas de Informação — CTC [course:Sistemas de Informação]" },
+  { name: "Engenharia de Computação",            description: "Curso de Engenharia de Computação — CTC [course:Engenharia de Computação]" },
+  { name: "Engenharia Elétrica",                 description: "Curso de Engenharia Elétrica — CTC [course:Engenharia Elétrica]" },
+  { name: "Engenharia Mecânica",                 description: "Curso de Engenharia Mecânica — CTC [course:Engenharia Mecânica]" },
+  { name: "Engenharia Civil",                    description: "Curso de Engenharia Civil — CTC [course:Engenharia Civil]" },
+  { name: "Engenharia Química",                  description: "Curso de Engenharia Química — CTC [course:Engenharia Química]" },
+  { name: "Engenharia de Controle e Automação",  description: "Curso de Engenharia de Controle e Automação — CTC [course:Engenharia de Controle e Automação]" },
+  { name: "Engenharia de Materiais",             description: "Curso de Engenharia de Materiais — CTC [course:Engenharia de Materiais]" },
+  { name: "Engenharia de Produção",              description: "Curso de Engenharia de Produção — CTC [course:Engenharia de Produção]" },
+  { name: "Engenharia Sanitária e Ambiental",    description: "Curso de Engenharia Sanitária e Ambiental — CTC [course:Engenharia Sanitária e Ambiental]" },
+  { name: "Arquitetura e Urbanismo",             description: "Curso de Arquitetura e Urbanismo — CTC [course:Arquitetura e Urbanismo]" },
   // CCS
-  { name: "Medicina", description: "Curso de Medicina — CCS [course:Medicina]", category: "curso" },
-  { name: "Enfermagem", description: "Curso de Enfermagem — CCS [course:Enfermagem]", category: "curso" },
-  { name: "Odontologia", description: "Curso de Odontologia — CCS [course:Odontologia]", category: "curso" },
-  { name: "Farmácia", description: "Curso de Farmácia — CCS [course:Farmácia]", category: "curso" },
-  { name: "Nutrição", description: "Curso de Nutrição — CCS [course:Nutrição]", category: "curso" },
-  { name: "Fonoaudiologia", description: "Curso de Fonoaudiologia — CCS [course:Fonoaudiologia]", category: "curso" },
+  { name: "Medicina",                            description: "Curso de Medicina — CCS [course:Medicina]" },
+  { name: "Enfermagem",                          description: "Curso de Enfermagem — CCS [course:Enfermagem]" },
+  { name: "Odontologia",                         description: "Curso de Odontologia — CCS [course:Odontologia]" },
+  { name: "Farmácia",                            description: "Curso de Farmácia — CCS [course:Farmácia]" },
+  { name: "Nutrição",                            description: "Curso de Nutrição — CCS [course:Nutrição]" },
+  { name: "Fonoaudiologia",                      description: "Curso de Fonoaudiologia — CCS [course:Fonoaudiologia]" },
   // CFH
-  { name: "Psicologia", description: "Curso de Psicologia — CFH [course:Psicologia]", category: "curso" },
-  { name: "História", description: "Curso de História — CFH [course:História]", category: "curso" },
-  { name: "Filosofia", description: "Curso de Filosofia — CFH [course:Filosofia]", category: "curso" },
-  { name: "Ciências Sociais", description: "Curso de Ciências Sociais — CFH [course:Ciências Sociais]", category: "curso" },
-  { name: "Geografia", description: "Curso de Geografia — CFH [course:Geografia]", category: "curso" },
-  { name: "Antropologia", description: "Curso de Antropologia — CFH [course:Antropologia]", category: "curso" },
+  { name: "Psicologia",                          description: "Curso de Psicologia — CFH [course:Psicologia]" },
+  { name: "História",                            description: "Curso de História — CFH [course:História]" },
+  { name: "Filosofia",                           description: "Curso de Filosofia — CFH [course:Filosofia]" },
+  { name: "Ciências Sociais",                    description: "Curso de Ciências Sociais — CFH [course:Ciências Sociais]" },
+  { name: "Geografia",                           description: "Curso de Geografia — CFH [course:Geografia]" },
+  { name: "Antropologia",                        description: "Curso de Antropologia — CFH [course:Antropologia]" },
   // CCJ
-  { name: "Direito", description: "Curso de Direito — CCJ [course:Direito]", category: "curso" },
+  { name: "Direito",                             description: "Curso de Direito — CCJ [course:Direito]" },
   // CCE
-  { name: "Jornalismo", description: "Curso de Jornalismo — CCE [course:Jornalismo]", category: "curso" },
-  { name: "Letras", description: "Curso de Letras — CCE [course:Letras]", category: "curso" },
-  { name: "Letras - Língua Portuguesa", description: "Curso de Letras - Língua Portuguesa — CCE [course:Letras - Língua Portuguesa]", category: "curso" },
-  { name: "Letras - Língua Inglesa", description: "Curso de Letras - Língua Inglesa — CCE [course:Letras - Língua Inglesa]", category: "curso" },
-  { name: "Design", description: "Curso de Design — CCE [course:Design]", category: "curso" },
-  { name: "Biblioteconomia", description: "Curso de Biblioteconomia — CCE [course:Biblioteconomia]", category: "curso" },
+  { name: "Jornalismo",                          description: "Curso de Jornalismo — CCE [course:Jornalismo]" },
+  { name: "Letras",                              description: "Curso de Letras — CCE [course:Letras]" },
+  { name: "Letras - Língua Portuguesa",          description: "Curso de Letras - Língua Portuguesa — CCE [course:Letras - Língua Portuguesa]" },
+  { name: "Letras - Língua Inglesa",             description: "Curso de Letras - Língua Inglesa — CCE [course:Letras - Língua Inglesa]" },
+  { name: "Design",                              description: "Curso de Design — CCE [course:Design]" },
+  { name: "Biblioteconomia",                     description: "Curso de Biblioteconomia — CCE [course:Biblioteconomia]" },
   // CSE
-  { name: "Administração", description: "Curso de Administração — CSE [course:Administração]", category: "curso" },
-  { name: "Ciências Econômicas", description: "Curso de Ciências Econômicas — CSE [course:Ciências Econômicas]", category: "curso" },
-  { name: "Ciências Contábeis", description: "Curso de Ciências Contábeis — CSE [course:Ciências Contábeis]", category: "curso" },
-  { name: "Serviço Social", description: "Curso de Serviço Social — CSE [course:Serviço Social]", category: "curso" },
+  { name: "Administração",                       description: "Curso de Administração — CSE [course:Administração]" },
+  { name: "Ciências Econômicas",                 description: "Curso de Ciências Econômicas — CSE [course:Ciências Econômicas]" },
+  { name: "Ciências Contábeis",                  description: "Curso de Ciências Contábeis — CSE [course:Ciências Contábeis]" },
+  { name: "Serviço Social",                      description: "Curso de Serviço Social — CSE [course:Serviço Social]" },
   // CCA
-  { name: "Agronomia", description: "Curso de Agronomia — CCA [course:Agronomia]", category: "curso" },
-  { name: "Zootecnia", description: "Curso de Zootecnia — CCA [course:Zootecnia]", category: "curso" },
-  { name: "Medicina Veterinária", description: "Curso de Medicina Veterinária — CCA [course:Medicina Veterinária]", category: "curso" },
-  { name: "Aquicultura", description: "Curso de Aquicultura — CCA [course:Aquicultura]", category: "curso" },
+  { name: "Agronomia",                           description: "Curso de Agronomia — CCA [course:Agronomia]" },
+  { name: "Zootecnia",                           description: "Curso de Zootecnia — CCA [course:Zootecnia]" },
+  { name: "Medicina Veterinária",                description: "Curso de Medicina Veterinária — CCA [course:Medicina Veterinária]" },
+  { name: "Aquicultura",                         description: "Curso de Aquicultura — CCA [course:Aquicultura]" },
   // CFM
-  { name: "Física", description: "Curso de Física — CFM [course:Física]", category: "curso" },
-  { name: "Matemática", description: "Curso de Matemática — CFM [course:Matemática]", category: "curso" },
-  { name: "Química", description: "Curso de Química — CFM [course:Química]", category: "curso" },
-  { name: "Oceanografia", description: "Curso de Oceanografia — CFM [course:Oceanografia]", category: "curso" },
-  // CED
-  { name: "Pedagogia", description: "Curso de Pedagogia — CED [course:Pedagogia]", category: "curso" },
-  { name: "Educação Física", description: "Curso de Educação Física — CED/CDS [course:Educação Física]", category: "curso" },
+  { name: "Física",                              description: "Curso de Física — CFM [course:Física]" },
+  { name: "Matemática",                          description: "Curso de Matemática — CFM [course:Matemática]" },
+  { name: "Química",                             description: "Curso de Química — CFM [course:Química]" },
+  { name: "Oceanografia",                        description: "Curso de Oceanografia — CFM [course:Oceanografia]" },
+  // CED / CDS
+  { name: "Pedagogia",                           description: "Curso de Pedagogia — CED [course:Pedagogia]" },
+  { name: "Educação Física",                     description: "Curso de Educação Física — CDS [course:Educação Física]" },
 ];
 
-async function upsertCommunity(data: { name: string; description: string; category: string }): Promise<number> {
-  // Check if already exists by name
-  const [existing] = await db
+function normalize(s: string): string {
+  return s.toLowerCase().trim().replace(/\s+/g, " ");
+}
+
+function extractTag(description: string, prefix: "course" | "dept"): string | null {
+  const match = description.match(new RegExp(`\\[${prefix}:(.+?)\\]`));
+  return match ? normalize(match[1]) : null;
+}
+
+async function upsertCommunity(
+  name: string,
+  description: string,
+  category: string,
+): Promise<number> {
+  // Atomic upsert: INSERT … ON CONFLICT (name) DO NOTHING, then SELECT.
+  // Requires that communities.name is unique — we enforce this via the ON CONFLICT target.
+  await db.execute(sql`
+    INSERT INTO communities (name, description, category, is_official, members_count, posts_count, created_at)
+    VALUES (${name}, ${description}, ${category}, TRUE, 0, 0, NOW())
+    ON CONFLICT (name) DO UPDATE
+      SET description = EXCLUDED.description,
+          is_official = TRUE
+  `);
+
+  const [row] = await db
     .select({ id: communitiesTable.id })
     .from(communitiesTable)
-    .where(eq(communitiesTable.name, data.name));
+    .where(eq(communitiesTable.name, name));
 
-  if (existing) return existing.id;
-
-  const [created] = await db
-    .insert(communitiesTable)
-    .values({ ...data, isOfficial: true, membersCount: 0, postsCount: 0 })
-    .returning({ id: communitiesTable.id });
-
-  return created.id;
+  return row.id;
 }
 
 async function joinUser(userId: number, communityId: number): Promise<void> {
   try {
     await db.transaction(async (tx) => {
       await tx.insert(communityMembershipsTable).values({ communityId, userId });
-      await tx.update(communitiesTable)
+      await tx
+        .update(communitiesTable)
         .set({ membersCount: sql`${communitiesTable.membersCount} + 1` })
         .where(eq(communitiesTable.id, communityId));
-      await tx.update(usersTable)
+      await tx
+        .update(usersTable)
         .set({ communitiesCount: sql`${usersTable.communitiesCount} + 1` })
         .where(eq(usersTable.id, userId));
     });
-  } catch {
-    // Already a member — skip
+  } catch (err: any) {
+    if (err?.code === "23505") return; // already a member — expected
+    throw err;
   }
 }
 
 export async function seedOfficialCommunities(): Promise<void> {
   console.log("🏛️  Criando comunidades oficiais da UFSC...");
 
-  // 1. Upsert all center communities
-  const centerIds = new Map<string, number>();
-  for (const center of CENTERS) {
-    const id = await upsertCommunity(center);
-    const tag = center.description.match(/\[dept:(.+?)\]/)?.[1] ?? center.name;
-    centerIds.set(tag, id);
-    console.log(`  ✓ Centro: ${center.name} (id=${id})`);
+  // Build tag → id maps for assignment
+  const courseTagToId = new Map<string, number>();
+  const deptTagToId = new Map<string, number>();
+
+  for (const c of CENTERS) {
+    const id = await upsertCommunity(c.name, c.description, "centro");
+    const tag = extractTag(c.description, "dept");
+    if (tag) deptTagToId.set(tag, id);
+    console.log(`  ✓ Centro: ${c.name} (id=${id})`);
   }
 
-  // 2. Upsert all course communities
-  const courseIds = new Map<string, number>();
-  for (const course of COURSES) {
-    const id = await upsertCommunity(course);
-    const tag = course.description.match(/\[course:(.+?)\]/)?.[1] ?? course.name;
-    courseIds.set(tag, id);
-    console.log(`  ✓ Curso: ${course.name} (id=${id})`);
+  for (const c of COURSES) {
+    const id = await upsertCommunity(c.name, c.description, "curso");
+    const tag = extractTag(c.description, "course");
+    if (tag) courseTagToId.set(tag, id);
+    console.log(`  ✓ Curso: ${c.name} (id=${id})`);
   }
 
-  // 3. Fetch all existing users and assign them
-  const users = await db.select({
-    id: usersTable.id,
-    course: usersTable.course,
-    department: usersTable.department,
-  }).from(usersTable);
+  // Assign all existing users
+  const users = await db
+    .select({ id: usersTable.id, course: usersTable.course, department: usersTable.department })
+    .from(usersTable);
 
-  console.log(`\n👥 Associando ${users.length} usuários existentes...`);
+  console.log(`\n👥 Associando ${users.length} usuário(s) existente(s)...`);
 
   for (const user of users) {
+    const normCourse = normalize(user.course);
+    const normDept = normalize(user.department);
     let joined = 0;
 
-    const courseId = courseIds.get(user.course) ??
-      [...courseIds.entries()].find(([k]) => k.toLowerCase() === user.course.toLowerCase())?.[1];
+    const courseId = courseTagToId.get(normCourse);
     if (courseId) { await joinUser(user.id, courseId); joined++; }
 
-    const deptId = centerIds.get(user.department) ??
-      [...centerIds.entries()].find(([k]) => k.toLowerCase() === user.department.toLowerCase())?.[1];
+    const deptId = deptTagToId.get(normDept);
     if (deptId) { await joinUser(user.id, deptId); joined++; }
 
     console.log(`  ✓ Usuário #${user.id} (${user.course} / ${user.department}) → ${joined} comunidade(s)`);
@@ -162,10 +182,12 @@ export async function seedOfficialCommunities(): Promise<void> {
   console.log("✅ Seed de comunidades concluído!");
 }
 
-// Allow running directly
-if (process.argv[1]?.endsWith("seed-communities.ts") || process.argv[1]?.endsWith("seed-communities.js")) {
-  seedOfficialCommunities().then(() => process.exit(0)).catch((err) => {
-    console.error("❌ Erro:", err);
-    process.exit(1);
-  });
+// Standalone execution
+if (
+  process.argv[1]?.endsWith("seed-communities.ts") ||
+  process.argv[1]?.endsWith("seed-communities.js")
+) {
+  seedOfficialCommunities()
+    .then(() => process.exit(0))
+    .catch((err) => { console.error("❌ Erro:", err); process.exit(1); });
 }
