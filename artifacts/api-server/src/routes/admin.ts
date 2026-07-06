@@ -200,7 +200,6 @@ router.post("/admin/seed-communities", requireAdmin, async (req, res): Promise<v
       total: allCommunities.length,
       message: `${created} comunidades novas criadas (${allCommunities.length - created} já existiam).`,
       breakdown: {
-        campus: allCommunities.filter(c => c.category === "campus").length,
         centro: allCommunities.filter(c => c.category === "centro").length,
         curso: allCommunities.filter(c => c.category === "curso").length,
       },

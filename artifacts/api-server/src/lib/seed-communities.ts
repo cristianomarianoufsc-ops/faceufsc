@@ -5,40 +5,6 @@ export interface CommunityData {
   isFixed: boolean;
 }
 
-// ─── Por campus ─────────────────────────────────────────────────────────────
-const CAMPUS_COMMUNITIES: CommunityData[] = [
-  {
-    name: "UFSC — Campus Florianópolis",
-    description: "Comunidade oficial do campus sede da UFSC em Florianópolis. Reúne estudantes, professores e servidores do campus principal.",
-    category: "campus",
-    isFixed: true,
-  },
-  {
-    name: "UFSC — Campus Joinville",
-    description: "Comunidade oficial do Centro Tecnológico de Joinville (CTJ). Engenharias de ponta no norte catarinense.",
-    category: "campus",
-    isFixed: true,
-  },
-  {
-    name: "UFSC — Campus Araranguá",
-    description: "Comunidade oficial do Campus Araranguá. Cursos de saúde, tecnologia e energia no extremo sul de Santa Catarina.",
-    category: "campus",
-    isFixed: true,
-  },
-  {
-    name: "UFSC — Campus Curitibanos",
-    description: "Comunidade oficial do Campus Curitibanos. Foco em ciências agrárias e ciências rurais no planalto serrano.",
-    category: "campus",
-    isFixed: true,
-  },
-  {
-    name: "UFSC — Campus Blumenau",
-    description: "Comunidade oficial do Campus Blumenau. Engenharias e ciências no Vale do Itajaí.",
-    category: "campus",
-    isFixed: true,
-  },
-];
-
 // ─── Por centro ─────────────────────────────────────────────────────────────
 const CENTRO_COMMUNITIES: CommunityData[] = [
   {
@@ -245,7 +211,6 @@ function buildCursoCommunities(): CommunityData[] {
 // ─── Export ──────────────────────────────────────────────────────────────────
 export function generateAllCommunities(): CommunityData[] {
   return [
-    ...CAMPUS_COMMUNITIES,
     ...CENTRO_COMMUNITIES,
     ...buildCursoCommunities(),
   ];
