@@ -192,6 +192,11 @@ paths:
           in: query
           schema:
             type: string
+        - name: parentId
+          in: query
+          description: Return children of this community ID. Omit for root-level communities.
+          schema:
+            type: integer
       responses:
         "200":
           description: List of communities
@@ -237,6 +242,27 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Community"
+
+  /communities/{id}/children:
+    get:
+      operationId: getCommunityChildren
+      tags: [communities]
+      summary: List direct child communities
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of child communities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Community"
 
   /communities/{id}/members:
     get:
@@ -615,13 +641,19 @@ components:
           type: string
         category:
           type: string
-          enum: [course, research, sports, culture, housing, general]
+          enum: [campus, centro, curso, course, research, sports, culture, housing, general]
+        parentId:
+          type: ["integer", "null"]
+        childrenCount:
+          type: integer
         membersCount:
           type: integer
         postsCount:
           type: integer
         imageUrl:
           type: ["string", "null"]
+        isFixed:
+          type: boolean
         createdAt:
           type: string
       required:
@@ -629,6 +661,7 @@ components:
         - name
         - description
         - category
+        - childrenCount
         - membersCount
         - postsCount
         - createdAt
@@ -643,6 +676,8 @@ components:
           type: string
         category:
           type: string
+        parentId:
+          type: ["integer", "null"]
       required:
         - name
         - description

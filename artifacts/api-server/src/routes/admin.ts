@@ -174,9 +174,16 @@ router.post("/admin/seed-communities", requireAdmin, async (req, res): Promise<v
     let created = 0;
     let updated = 0;
 
+    // Helper: upsert one community, tracking created vs updated
+    const existingNames = new Set(
+      (await db.select({ name: communitiesTable.name }).from(communitiesTable)
+        .where(eq(communitiesTable.isFixed, true))).map(r => r.name)
+    );
+
     // ── Fase 1: Campus (sem parentId) ────────────────────────────────────────
     for (const campus of CAMPUS_SEED) {
-      const result = await db.insert(communitiesTable).values({
+      const isNew = !existingNames.has(campus.name);
+      await db.insert(communitiesTable).values({
         name: campus.name,
         description: campus.description,
         category: "campus",
@@ -187,8 +194,8 @@ router.post("/admin/seed-communities", requireAdmin, async (req, res): Promise<v
       }).onConflictDoUpdate({
         target: communitiesTable.name,
         set: { parentId: null, isFixed: true, category: "campus" },
-      }).returning({ id: communitiesTable.id });
-      if (result.length) created++;
+      });
+      if (isNew) created++; else updated++;
     }
 
     // Busca IDs dos campus pelo nome
@@ -203,6 +210,7 @@ router.post("/admin/seed-communities", requireAdmin, async (req, res): Promise<v
     for (const centro of CENTRO_SEED) {
       const parentId = campusKeyToId.get(centro.campusKey);
       if (!parentId) continue;
+      const isNew = !existingNames.has(centro.name);
       await db.insert(communitiesTable).values({
         name: centro.name,
         description: centro.description,
@@ -215,7 +223,7 @@ router.post("/admin/seed-communities", requireAdmin, async (req, res): Promise<v
         target: communitiesTable.name,
         set: { parentId, isFixed: true, category: "centro" },
       });
-      created++;
+      if (isNew) created++; else updated++;
     }
 
     // Busca IDs dos centros pelo nome
@@ -234,6 +242,7 @@ router.post("/admin/seed-communities", requireAdmin, async (req, res): Promise<v
           ? campusKeyToId.get(curso.campusKey)
           : undefined;
       if (!parentId) continue;
+      const isNew = !existingNames.has(curso.name);
       await db.insert(communitiesTable).values({
         name: curso.name,
         description: buildCursoDescription(curso),
@@ -246,7 +255,7 @@ router.post("/admin/seed-communities", requireAdmin, async (req, res): Promise<v
         target: communitiesTable.name,
         set: { parentId, isFixed: true, category: "curso" },
       });
-      created++;
+      if (isNew) created++; else updated++;
     }
 
     const total = CAMPUS_SEED.length + CENTRO_SEED.length + CURSO_SEED.length;

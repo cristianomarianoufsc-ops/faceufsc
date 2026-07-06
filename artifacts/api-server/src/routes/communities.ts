@@ -44,6 +44,11 @@ router.get("/communities", async (req, res) => {
     const hasSearch = !!search;
     const hasParentId = parentIdRaw !== undefined;
 
+    if (hasParentId && (isNaN(parseInt(parentIdRaw!)) || !/^\d+$/.test(parentIdRaw!))) {
+      res.status(400).json({ error: "parentId deve ser um número inteiro válido." });
+      return;
+    }
+
     // Build WHERE clause
     let whereClause;
     if (hasSearch) {
