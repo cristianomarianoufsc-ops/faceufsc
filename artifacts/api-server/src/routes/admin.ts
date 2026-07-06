@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { appSettingsTable, usersTable, postsTable, communitiesTable } from "@workspace/db";
-import { eq, desc, inArray } from "drizzle-orm";
+import { eq, desc, inArray, and } from "drizzle-orm";
 import { generateAllCommunities } from "../lib/seed-communities";
 
 const router = Router();
@@ -139,6 +139,9 @@ router.delete("/admin/posts/:id", requireAdmin, async (req, res): Promise<void> 
 // ─── Remover categorias de comunidades fixas ─────────────────────────────────
 // DELETE /admin/purge-community-categories
 // Body: { categories: string[] }
+// Apenas remove comunidades marcadas como isFixed=true para não afetar comunidades criadas por usuários.
+const SEEDED_CATEGORIES = ["campus", "centro", "moradia", "entidade", "curso", "turma"] as const;
+
 router.delete("/admin/purge-community-categories", requireAdmin, async (req, res): Promise<void> => {
   try {
     const { categories } = req.body as { categories?: string[] };
@@ -146,11 +149,19 @@ router.delete("/admin/purge-community-categories", requireAdmin, async (req, res
       res.status(400).json({ error: "Informe um array 'categories' não vazio." });
       return;
     }
+    const invalid = categories.filter(c => !(SEEDED_CATEGORIES as readonly string[]).includes(c));
+    if (invalid.length > 0) {
+      res.status(400).json({ error: `Categorias inválidas: ${invalid.join(", ")}. Permitidas: ${SEEDED_CATEGORIES.join(", ")}.` });
+      return;
+    }
     const deleted = await db
       .delete(communitiesTable)
-      .where(inArray(communitiesTable.category, categories))
+      .where(and(
+        inArray(communitiesTable.category, categories),
+        eq(communitiesTable.isFixed, true),
+      ))
       .returning({ id: communitiesTable.id });
-    req.log.info({ deleted: deleted.length, categories }, "Categorias de comunidades removidas");
+    req.log.info({ deleted: deleted.length, categories }, "Categorias de comunidades fixas removidas");
     res.json({ deleted: deleted.length, categories });
   } catch (err) {
     req.log.error(err);
@@ -191,10 +202,7 @@ router.post("/admin/seed-communities", requireAdmin, async (req, res): Promise<v
       breakdown: {
         campus: allCommunities.filter(c => c.category === "campus").length,
         centro: allCommunities.filter(c => c.category === "centro").length,
-        moradia: allCommunities.filter(c => c.category === "moradia").length,
-        entidade: allCommunities.filter(c => c.category === "entidade").length,
         curso: allCommunities.filter(c => c.category === "curso").length,
-        turma: allCommunities.filter(c => c.category === "turma").length,
       },
     });
   } catch (err) {
