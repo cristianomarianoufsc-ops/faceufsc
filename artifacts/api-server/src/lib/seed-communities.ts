@@ -1,217 +1,160 @@
-export interface CommunityData {
-  name: string;
-  description: string;
-  category: string;
-  isFixed: boolean;
+/**
+ * Seed hierárquico de comunidades fixas da UFSC.
+ * Hierarquia: Campus → Centro → Curso
+ * Campi menores (ARA, CBS, BNU) não têm centro: Campus → Curso direto.
+ */
+
+// ─── Campus ──────────────────────────────────────────────────────────────────
+export const CAMPUS_SEED = [
+  { key: "FLO", name: "UFSC — Campus Florianópolis", description: "Comunidade oficial do campus sede da UFSC em Florianópolis. Reúne estudantes, professores e servidores do campus principal." },
+  { key: "JOI", name: "UFSC — Campus Joinville", description: "Comunidade oficial do Campus Joinville (CTJ). Engenharias de ponta no polo industrial do norte catarinense." },
+  { key: "ARA", name: "UFSC — Campus Araranguá", description: "Comunidade oficial do Campus Araranguá. Cursos de saúde, tecnologia e energia no extremo sul de Santa Catarina." },
+  { key: "CBS", name: "UFSC — Campus Curitibanos", description: "Comunidade oficial do Campus Curitibanos. Foco em ciências agrárias e ciências rurais no planalto serrano." },
+  { key: "BNU", name: "UFSC — Campus Blumenau", description: "Comunidade oficial do Campus Blumenau. Engenharias e ciências no Vale do Itajaí." },
+];
+
+// ─── Centro ──────────────────────────────────────────────────────────────────
+// campusKey referencia a chave do campus pai
+export const CENTRO_SEED = [
+  // Florianópolis
+  { key: "CTC", campusKey: "FLO", name: "CTC — Centro Tecnológico", description: "Centro Tecnológico da UFSC. Reúne os cursos de engenharia, computação, arquitetura e sistemas do campus de Florianópolis." },
+  { key: "CCS", campusKey: "FLO", name: "CCS — Centro de Ciências da Saúde", description: "Centro de Ciências da Saúde da UFSC. Abriga medicina, enfermagem, farmácia, odontologia, nutrição e fonoaudiologia." },
+  { key: "CFH", campusKey: "FLO", name: "CFH — Centro de Filosofia e Ciências Humanas", description: "Centro de Filosofia e Ciências Humanas da UFSC. Psicologia, história, filosofia, ciências sociais, antropologia e mais." },
+  { key: "CCJ", campusKey: "FLO", name: "CCJ — Centro de Ciências Jurídicas", description: "Centro de Ciências Jurídicas da UFSC. Um dos cursos de Direito mais conceituados do Brasil." },
+  { key: "CCE", campusKey: "FLO", name: "CCE — Centro de Comunicação e Expressão", description: "Centro de Comunicação e Expressão da UFSC. Design, jornalismo, letras, artes cênicas e cinema." },
+  { key: "CCB", campusKey: "FLO", name: "CCB — Centro de Ciências Biológicas", description: "Centro de Ciências Biológicas da UFSC. Ciências biológicas e biotecnologia." },
+  { key: "CDS", campusKey: "FLO", name: "CDS — Centro de Desportos", description: "Centro de Desportos da UFSC. Educação física, esporte e bem-estar na universidade." },
+  { key: "CED", campusKey: "FLO", name: "CED — Centro de Ciências da Educação", description: "Centro de Ciências da Educação da UFSC. Pedagogia, educação do campo e formação de professores." },
+  { key: "CFM", campusKey: "FLO", name: "CFM — Centro de Ciências Físicas e Matemáticas", description: "Centro de Ciências Físicas e Matemáticas da UFSC. Física, matemática, química, meteorologia e oceanografia." },
+  { key: "CSE", campusKey: "FLO", name: "CSE — Centro Socioeconômico", description: "Centro Socioeconômico da UFSC. Administração, economia, ciências contábeis, relações internacionais e serviço social." },
+  // Joinville tem um centro único
+  { key: "CTJ", campusKey: "JOI", name: "CTJ — Centro Tecnológico de Joinville", description: "Centro Tecnológico de Joinville. Engenharias especializadas no polo industrial do norte catarinense." },
+];
+
+// ─── Curso ───────────────────────────────────────────────────────────────────
+// centroKey → vincula ao centro; campusKey → vincula direto ao campus (sem centro)
+export const CURSO_SEED: Array<{ name: string; centroKey?: string; campusKey?: string }> = [
+  // CTC — Centro Tecnológico (Florianópolis)
+  { name: "Arquitetura e Urbanismo", centroKey: "CTC" },
+  { name: "Ciência da Computação", centroKey: "CTC" },
+  { name: "Engenharia Aeroespacial", centroKey: "CTC" },
+  { name: "Engenharia Civil", centroKey: "CTC" },
+  { name: "Engenharia de Alimentos", centroKey: "CTC" },
+  { name: "Engenharia de Computação", centroKey: "CTC" },
+  { name: "Engenharia de Controle e Automação", centroKey: "CTC" },
+  { name: "Engenharia de Materiais", centroKey: "CTC" },
+  { name: "Engenharia de Produção", centroKey: "CTC" },
+  { name: "Engenharia Elétrica", centroKey: "CTC" },
+  { name: "Engenharia Mecânica", centroKey: "CTC" },
+  { name: "Engenharia Química", centroKey: "CTC" },
+  { name: "Engenharia Sanitária e Ambiental", centroKey: "CTC" },
+  { name: "Sistemas de Informação", centroKey: "CTC" },
+  // CCS — Ciências da Saúde (Florianópolis)
+  { name: "Enfermagem", centroKey: "CCS" },
+  { name: "Farmácia", centroKey: "CCS" },
+  { name: "Fonoaudiologia", centroKey: "CCS" },
+  { name: "Medicina", centroKey: "CCS" },
+  { name: "Nutrição", centroKey: "CCS" },
+  { name: "Odontologia", centroKey: "CCS" },
+  // CFH — Filosofia e Ciências Humanas (Florianópolis)
+  { name: "Antropologia", centroKey: "CFH" },
+  { name: "Arqueologia", centroKey: "CFH" },
+  { name: "Ciências Sociais", centroKey: "CFH" },
+  { name: "Filosofia", centroKey: "CFH" },
+  { name: "Geociências", centroKey: "CFH" },
+  { name: "História", centroKey: "CFH" },
+  { name: "Museologia", centroKey: "CFH" },
+  { name: "Psicologia", centroKey: "CFH" },
+  // CCJ — Ciências Jurídicas (Florianópolis)
+  { name: "Direito", centroKey: "CCJ" },
+  // CCE — Comunicação e Expressão (Florianópolis)
+  { name: "Artes Cênicas", centroKey: "CCE" },
+  { name: "Cinema", centroKey: "CCE" },
+  { name: "Design", centroKey: "CCE" },
+  { name: "Jornalismo", centroKey: "CCE" },
+  { name: "Letras — Língua e Literatura Alemã", centroKey: "CCE" },
+  { name: "Letras — Língua e Literatura Espanhola", centroKey: "CCE" },
+  { name: "Letras — Língua e Literatura Francesa", centroKey: "CCE" },
+  { name: "Letras — Língua e Literatura Italiana", centroKey: "CCE" },
+  { name: "Letras — Língua e Literatura Japonesa", centroKey: "CCE" },
+  { name: "Letras — Língua e Literatura Portuguesa", centroKey: "CCE" },
+  { name: "Letras — Língua e Literaturas de Língua Inglesa", centroKey: "CCE" },
+  { name: "Letras — Língua Brasileira de Sinais (LIBRAS)", centroKey: "CCE" },
+  { name: "Letras — Português e Espanhol", centroKey: "CCE" },
+  // CCB — Ciências Biológicas (Florianópolis)
+  { name: "Biotecnologia", centroKey: "CCB" },
+  { name: "Ciências Biológicas", centroKey: "CCB" },
+  // CDS — Centro de Desportos (Florianópolis)
+  { name: "Educação Física", centroKey: "CDS" },
+  // CED — Ciências da Educação (Florianópolis)
+  { name: "Educação do Campo", centroKey: "CED" },
+  { name: "Pedagogia", centroKey: "CED" },
+  // CFM — Ciências Físicas e Matemáticas (Florianópolis)
+  { name: "Física", centroKey: "CFM" },
+  { name: "Matemática", centroKey: "CFM" },
+  { name: "Meteorologia", centroKey: "CFM" },
+  { name: "Oceanografia", centroKey: "CFM" },
+  { name: "Química", centroKey: "CFM" },
+  // CSE — Centro Socioeconômico (Florianópolis)
+  { name: "Administração", centroKey: "CSE" },
+  { name: "Ciências Contábeis", centroKey: "CSE" },
+  { name: "Ciências Econômicas", centroKey: "CSE" },
+  { name: "Relações Internacionais", centroKey: "CSE" },
+  { name: "Serviço Social", centroKey: "CSE" },
+  // CTJ — Campus Joinville
+  { name: "Engenharia Automotiva — Joinville", centroKey: "CTJ" },
+  { name: "Engenharia Civil — Joinville", centroKey: "CTJ" },
+  { name: "Engenharia de Infraestrutura — Joinville", centroKey: "CTJ" },
+  { name: "Engenharia Ferroviária e Metroviária — Joinville", centroKey: "CTJ" },
+  { name: "Engenharia Mecatrônica — Joinville", centroKey: "CTJ" },
+  { name: "Engenharia Naval — Joinville", centroKey: "CTJ" },
+  // Campus Araranguá — direto (sem centro)
+  { name: "Engenharia de Energia — Araranguá", campusKey: "ARA" },
+  { name: "Fisioterapia — Araranguá", campusKey: "ARA" },
+  { name: "Medicina — Araranguá", campusKey: "ARA" },
+  { name: "Tecnologias da Informação e Comunicação — Araranguá", campusKey: "ARA" },
+  // Campus Curitibanos — direto (sem centro)
+  { name: "Agronomia — Curitibanos", campusKey: "CBS" },
+  { name: "Ciências Rurais — Curitibanos", campusKey: "CBS" },
+  { name: "Engenharia Florestal — Curitibanos", campusKey: "CBS" },
+  { name: "Medicina Veterinária — Curitibanos", campusKey: "CBS" },
+  // Campus Blumenau — direto (sem centro)
+  { name: "Engenharia de Controle e Automação — Blumenau", campusKey: "BNU" },
+  { name: "Engenharia de Materiais — Blumenau", campusKey: "BNU" },
+  { name: "Engenharia Têxtil — Blumenau", campusKey: "BNU" },
+  { name: "Farmácia — Blumenau", campusKey: "BNU" },
+  { name: "Química — Blumenau", campusKey: "BNU" },
+];
+
+function cursoDescription(name: string, centro?: string, campus?: string): string {
+  const location = centro ?? campus ?? "UFSC";
+  return `Comunidade do curso de ${name} na UFSC (${location}). Espaço para estudantes, ex-alunos e professores do curso.`;
 }
 
-// ─── Por centro ─────────────────────────────────────────────────────────────
-const CENTRO_COMMUNITIES: CommunityData[] = [
-  {
-    name: "CTC — Centro Tecnológico",
-    description: "Centro Tecnológico da UFSC. Reúne os cursos de engenharia, computação, arquitetura e sistemas do campus de Florianópolis.",
-    category: "centro",
-    isFixed: true,
-  },
-  {
-    name: "CCS — Centro de Ciências da Saúde",
-    description: "Centro de Ciências da Saúde da UFSC. Abriga medicina, enfermagem, farmácia, odontologia, nutrição e fonoaudiologia.",
-    category: "centro",
-    isFixed: true,
-  },
-  {
-    name: "CFH — Centro de Filosofia e Ciências Humanas",
-    description: "Centro de Filosofia e Ciências Humanas da UFSC. Psicologia, história, filosofia, ciências sociais, antropologia e mais.",
-    category: "centro",
-    isFixed: true,
-  },
-  {
-    name: "CCJ — Centro de Ciências Jurídicas",
-    description: "Centro de Ciências Jurídicas da UFSC. Um dos cursos de Direito mais conceituados do Brasil.",
-    category: "centro",
-    isFixed: true,
-  },
-  {
-    name: "CCE — Centro de Comunicação e Expressão",
-    description: "Centro de Comunicação e Expressão da UFSC. Design, jornalismo, letras, artes cênicas e cinema.",
-    category: "centro",
-    isFixed: true,
-  },
-  {
-    name: "CCB — Centro de Ciências Biológicas",
-    description: "Centro de Ciências Biológicas da UFSC. Ciências biológicas e biotecnologia.",
-    category: "centro",
-    isFixed: true,
-  },
-  {
-    name: "CDS — Centro de Desportos",
-    description: "Centro de Desportos da UFSC. Educação física, esporte e bem-estar na universidade.",
-    category: "centro",
-    isFixed: true,
-  },
-  {
-    name: "CED — Centro de Ciências da Educação",
-    description: "Centro de Ciências da Educação da UFSC. Pedagogia, educação do campo e formação de professores.",
-    category: "centro",
-    isFixed: true,
-  },
-  {
-    name: "CFM — Centro de Ciências Físicas e Matemáticas",
-    description: "Centro de Ciências Físicas e Matemáticas da UFSC. Física, matemática, química, meteorologia e oceanografia.",
-    category: "centro",
-    isFixed: true,
-  },
-  {
-    name: "CSE — Centro Socioeconômico",
-    description: "Centro Socioeconômico da UFSC. Administração, economia, ciências contábeis, relações internacionais e serviço social.",
-    category: "centro",
-    isFixed: true,
-  },
-  {
-    name: "CTJ — Centro Tecnológico de Joinville",
-    description: "Centro Tecnológico de Joinville (Campus Joinville). Engenharias especializadas no polo industrial do norte catarinense.",
-    category: "centro",
-    isFixed: true,
-  },
-  {
-    name: "CCA — Campus Araranguá (Centro)",
-    description: "Comunidade do Centro Acadêmico do Campus Araranguá. Saúde, energia e tecnologia no sul do estado.",
-    category: "centro",
-    isFixed: true,
-  },
-  {
-    name: "CCB — Campus Blumenau (Centro)",
-    description: "Comunidade do Centro Acadêmico do Campus Blumenau. Engenharias e ciências no Vale do Itajaí.",
-    category: "centro",
-    isFixed: true,
-  },
-  {
-    name: "CBS — Campus Curitibanos (Centro)",
-    description: "Comunidade do Centro Acadêmico do Campus Curitibanos. Ciências agrárias e rurais no planalto serrano.",
-    category: "centro",
-    isFixed: true,
-  },
-];
-
-// ─── Por curso ───────────────────────────────────────────────────────────────
-interface CourseEntry { name: string; department: string; }
-
-const UFSC_COURSES: CourseEntry[] = [
-  // CCE
-  { name: "Artes Cênicas", department: "CCE" },
-  { name: "Cinema", department: "CCE" },
-  { name: "Design", department: "CCE" },
-  { name: "Jornalismo", department: "CCE" },
-  { name: "Letras — Língua e Literatura Alemã", department: "CCE" },
-  { name: "Letras — Língua e Literatura Espanhola", department: "CCE" },
-  { name: "Letras — Língua e Literatura Francesa", department: "CCE" },
-  { name: "Letras — Língua e Literatura Italiana", department: "CCE" },
-  { name: "Letras — Língua e Literatura Japonesa", department: "CCE" },
-  { name: "Letras — Língua e Literatura Portuguesa", department: "CCE" },
-  { name: "Letras — Língua e Literaturas de Língua Inglesa", department: "CCE" },
-  { name: "Letras — Língua Brasileira de Sinais (LIBRAS)", department: "CCE" },
-  { name: "Letras — Português e Espanhol", department: "CCE" },
-  // CCB
-  { name: "Biotecnologia", department: "CCB" },
-  { name: "Ciências Biológicas", department: "CCB" },
-  // CCJ
-  { name: "Direito", department: "CCJ" },
-  // CCS
-  { name: "Enfermagem", department: "CCS" },
-  { name: "Farmácia", department: "CCS" },
-  { name: "Fonoaudiologia", department: "CCS" },
-  { name: "Medicina", department: "CCS" },
-  { name: "Nutrição", department: "CCS" },
-  { name: "Odontologia", department: "CCS" },
-  // CDS
-  { name: "Educação Física", department: "CDS" },
-  // CED
-  { name: "Educação do Campo", department: "CED" },
-  { name: "Pedagogia", department: "CED" },
-  // CFH
-  { name: "Antropologia", department: "CFH" },
-  { name: "Arqueologia", department: "CFH" },
-  { name: "Ciências Sociais", department: "CFH" },
-  { name: "Filosofia", department: "CFH" },
-  { name: "Geociências", department: "CFH" },
-  { name: "História", department: "CFH" },
-  { name: "Museologia", department: "CFH" },
-  { name: "Psicologia", department: "CFH" },
-  // CFM
-  { name: "Física", department: "CFM" },
-  { name: "Matemática", department: "CFM" },
-  { name: "Meteorologia", department: "CFM" },
-  { name: "Oceanografia", department: "CFM" },
-  { name: "Química", department: "CFM" },
-  // CSE
-  { name: "Administração", department: "CSE" },
-  { name: "Ciências Contábeis", department: "CSE" },
-  { name: "Ciências Econômicas", department: "CSE" },
-  { name: "Relações Internacionais", department: "CSE" },
-  { name: "Serviço Social", department: "CSE" },
-  // CTC
-  { name: "Arquitetura e Urbanismo", department: "CTC" },
-  { name: "Ciência da Computação", department: "CTC" },
-  { name: "Engenharia Aeroespacial", department: "CTC" },
-  { name: "Engenharia Civil", department: "CTC" },
-  { name: "Engenharia de Alimentos", department: "CTC" },
-  { name: "Engenharia de Computação", department: "CTC" },
-  { name: "Engenharia de Controle e Automação", department: "CTC" },
-  { name: "Engenharia de Materiais", department: "CTC" },
-  { name: "Engenharia de Produção", department: "CTC" },
-  { name: "Engenharia Elétrica", department: "CTC" },
-  { name: "Engenharia Mecânica", department: "CTC" },
-  { name: "Engenharia Química", department: "CTC" },
-  { name: "Engenharia Sanitária e Ambiental", department: "CTC" },
-  { name: "Sistemas de Informação", department: "CTC" },
-  // Campus Araranguá
-  { name: "Engenharia de Energia — Araranguá", department: "ARA" },
-  { name: "Fisioterapia — Araranguá", department: "ARA" },
-  { name: "Medicina — Araranguá", department: "ARA" },
-  { name: "Tecnologias da Informação e Comunicação — Araranguá", department: "ARA" },
-  // Campus Blumenau
-  { name: "Engenharia de Controle e Automação — Blumenau", department: "BNU" },
-  { name: "Engenharia de Materiais — Blumenau", department: "BNU" },
-  { name: "Engenharia Têxtil — Blumenau", department: "BNU" },
-  { name: "Farmácia — Blumenau", department: "BNU" },
-  { name: "Química — Blumenau", department: "BNU" },
-  // Campus Curitibanos
-  { name: "Agronomia — Curitibanos", department: "CBS" },
-  { name: "Ciências Rurais — Curitibanos", department: "CBS" },
-  { name: "Engenharia Florestal — Curitibanos", department: "CBS" },
-  { name: "Medicina Veterinária — Curitibanos", department: "CBS" },
-  // Campus Joinville
-  { name: "Engenharia Automotiva — Joinville", department: "JOI" },
-  { name: "Engenharia Civil — Joinville", department: "JOI" },
-  { name: "Engenharia de Infraestrutura — Joinville", department: "JOI" },
-  { name: "Engenharia Ferroviária e Metroviária — Joinville", department: "JOI" },
-  { name: "Engenharia Mecatrônica — Joinville", department: "JOI" },
-  { name: "Engenharia Naval — Joinville", department: "JOI" },
-];
-
-const DEPT_LABEL: Record<string, string> = {
-  CCE: "CCE — Comunicação e Expressão", CCB: "CCB — Ciências Biológicas",
-  CCJ: "CCJ — Ciências Jurídicas", CCS: "CCS — Ciências da Saúde",
-  CDS: "CDS — Centro de Desportos", CED: "CED — Ciências da Educação",
-  CFH: "CFH — Filosofia e Ciências Humanas", CFM: "CFM — Ciências Físicas e Matemáticas",
-  CSE: "CSE — Centro Socioeconômico", CTC: "CTC — Centro Tecnológico",
-  ARA: "Campus Araranguá", BNU: "Campus Blumenau",
-  CBS: "Campus Curitibanos", JOI: "Campus Joinville",
+// ─── Nomes dos centros e campi para descrição dos cursos ─────────────────────
+const CENTRO_LABEL: Record<string, string> = {
+  CTC: "CTC — Centro Tecnológico",
+  CCS: "CCS — Ciências da Saúde",
+  CFH: "CFH — Filosofia e Ciências Humanas",
+  CCJ: "CCJ — Ciências Jurídicas",
+  CCE: "CCE — Comunicação e Expressão",
+  CCB: "CCB — Ciências Biológicas",
+  CDS: "CDS — Centro de Desportos",
+  CED: "CED — Ciências da Educação",
+  CFM: "CFM — Ciências Físicas e Matemáticas",
+  CSE: "CSE — Centro Socioeconômico",
+  CTJ: "CTJ — Joinville",
+};
+const CAMPUS_LABEL: Record<string, string> = {
+  ARA: "Campus Araranguá",
+  CBS: "Campus Curitibanos",
+  BNU: "Campus Blumenau",
 };
 
-function buildCursoCommunities(): CommunityData[] {
-  return UFSC_COURSES.map(c => ({
-    name: c.name,
-    description: `Comunidade do curso de ${c.name} na UFSC (${DEPT_LABEL[c.department] ?? c.department}). Espaço para estudantes, ex-alunos e professores do curso.`,
-    category: "curso",
-    isFixed: true,
-  }));
-}
-
-// ─── Export ──────────────────────────────────────────────────────────────────
-export function generateAllCommunities(): CommunityData[] {
-  return [
-    ...CENTRO_COMMUNITIES,
-    ...buildCursoCommunities(),
-  ];
+export function buildCursoDescription(c: typeof CURSO_SEED[number]): string {
+  return cursoDescription(
+    c.name,
+    c.centroKey ? CENTRO_LABEL[c.centroKey] : undefined,
+    c.campusKey ? CAMPUS_LABEL[c.campusKey] : undefined,
+  );
 }

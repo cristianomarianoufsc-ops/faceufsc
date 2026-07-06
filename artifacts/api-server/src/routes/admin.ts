@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { appSettingsTable, usersTable, postsTable, communitiesTable } from "@workspace/db";
-import { eq, desc, inArray, and } from "drizzle-orm";
-import { generateAllCommunities } from "../lib/seed-communities";
+import { eq, desc, inArray, and, isNull } from "drizzle-orm";
+import { CAMPUS_SEED, CENTRO_SEED, CURSO_SEED, buildCursoDescription } from "../lib/seed-communities";
 
 const router = Router();
 
@@ -106,7 +106,6 @@ router.get("/admin/posts", requireAdmin, async (req, res): Promise<void> => {
       .from(postsTable)
       .orderBy(desc(postsTable.createdAt));
 
-    // Marcar posts órfãos (autor não existe mais na tabela users)
     const userIds = new Set(
       (await db.select({ id: usersTable.id }).from(usersTable)).map(u => u.id)
     );
@@ -137,9 +136,6 @@ router.delete("/admin/posts/:id", requireAdmin, async (req, res): Promise<void> 
 });
 
 // ─── Remover categorias de comunidades fixas ─────────────────────────────────
-// DELETE /admin/purge-community-categories
-// Body: { categories: string[] }
-// Apenas remove comunidades marcadas como isFixed=true para não afetar comunidades criadas por usuários.
 const SEEDED_CATEGORIES = ["campus", "centro", "moradia", "entidade", "curso", "turma"] as const;
 
 router.delete("/admin/purge-community-categories", requireAdmin, async (req, res): Promise<void> => {
@@ -169,39 +165,101 @@ router.delete("/admin/purge-community-categories", requireAdmin, async (req, res
   }
 });
 
-// ─── Seed de comunidades fixas da UFSC ───────────────────────────────────────
+// ─── Seed hierárquico de comunidades fixas da UFSC ───────────────────────────
 // POST /admin/seed-communities
-// Idempotente: usa onConflictDoNothing na constraint unique de name.
+// Hierarquia: Campus → Centro → Curso
+// Idempotente: usa onConflictDoUpdate para corrigir parentId em re-execuções.
 router.post("/admin/seed-communities", requireAdmin, async (req, res): Promise<void> => {
   try {
-    const allCommunities = generateAllCommunities();
-
     let created = 0;
-    const BATCH_SIZE = 50;
+    let updated = 0;
 
-    for (let i = 0; i < allCommunities.length; i += BATCH_SIZE) {
-      const batch = allCommunities.slice(i, i + BATCH_SIZE);
-      const result = await db.insert(communitiesTable).values(
-        batch.map(c => ({
-          name: c.name,
-          description: c.description,
-          category: c.category,
-          isFixed: c.isFixed,
-          membersCount: 0,
-          postsCount: 0,
-        }))
-      ).onConflictDoNothing({ target: communitiesTable.name }).returning({ id: communitiesTable.id });
-      created += result.length;
+    // ── Fase 1: Campus (sem parentId) ────────────────────────────────────────
+    for (const campus of CAMPUS_SEED) {
+      const result = await db.insert(communitiesTable).values({
+        name: campus.name,
+        description: campus.description,
+        category: "campus",
+        parentId: null,
+        isFixed: true,
+        membersCount: 0,
+        postsCount: 0,
+      }).onConflictDoUpdate({
+        target: communitiesTable.name,
+        set: { parentId: null, isFixed: true, category: "campus" },
+      }).returning({ id: communitiesTable.id });
+      if (result.length) created++;
     }
 
-    req.log.info({ created }, "Seed de comunidades fixas concluído");
+    // Busca IDs dos campus pelo nome
+    const campusRows = await db
+      .select({ id: communitiesTable.id, name: communitiesTable.name })
+      .from(communitiesTable)
+      .where(inArray(communitiesTable.name, CAMPUS_SEED.map(c => c.name)));
+    const campusNameToId = new Map(campusRows.map(r => [r.name, r.id]));
+    const campusKeyToId = new Map(CAMPUS_SEED.map(c => [c.key, campusNameToId.get(c.name)!]));
+
+    // ── Fase 2: Centro (parentId = campus) ───────────────────────────────────
+    for (const centro of CENTRO_SEED) {
+      const parentId = campusKeyToId.get(centro.campusKey);
+      if (!parentId) continue;
+      await db.insert(communitiesTable).values({
+        name: centro.name,
+        description: centro.description,
+        category: "centro",
+        parentId,
+        isFixed: true,
+        membersCount: 0,
+        postsCount: 0,
+      }).onConflictDoUpdate({
+        target: communitiesTable.name,
+        set: { parentId, isFixed: true, category: "centro" },
+      });
+      created++;
+    }
+
+    // Busca IDs dos centros pelo nome
+    const centroRows = await db
+      .select({ id: communitiesTable.id, name: communitiesTable.name })
+      .from(communitiesTable)
+      .where(inArray(communitiesTable.name, CENTRO_SEED.map(c => c.name)));
+    const centroNameToId = new Map(centroRows.map(r => [r.name, r.id]));
+    const centroKeyToId = new Map(CENTRO_SEED.map(c => [c.key, centroNameToId.get(c.name)!]));
+
+    // ── Fase 3: Cursos (parentId = centro ou campus) ──────────────────────────
+    for (const curso of CURSO_SEED) {
+      const parentId = curso.centroKey
+        ? centroKeyToId.get(curso.centroKey)
+        : curso.campusKey
+          ? campusKeyToId.get(curso.campusKey)
+          : undefined;
+      if (!parentId) continue;
+      await db.insert(communitiesTable).values({
+        name: curso.name,
+        description: buildCursoDescription(curso),
+        category: "curso",
+        parentId,
+        isFixed: true,
+        membersCount: 0,
+        postsCount: 0,
+      }).onConflictDoUpdate({
+        target: communitiesTable.name,
+        set: { parentId, isFixed: true, category: "curso" },
+      });
+      created++;
+    }
+
+    const total = CAMPUS_SEED.length + CENTRO_SEED.length + CURSO_SEED.length;
+    req.log.info({ created, total }, "Seed hierárquico de comunidades concluído");
     res.json({
       created,
-      total: allCommunities.length,
-      message: `${created} comunidades novas criadas (${allCommunities.length - created} já existiam).`,
+      updated,
+      total,
+      message: `Seed concluído: ${total} comunidades processadas.`,
       breakdown: {
-        centro: allCommunities.filter(c => c.category === "centro").length,
-        curso: allCommunities.filter(c => c.category === "curso").length,
+        campus: CAMPUS_SEED.length,
+        centro: CENTRO_SEED.length,
+        curso: CURSO_SEED.length,
       },
     });
   } catch (err) {

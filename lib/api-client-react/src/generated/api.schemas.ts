@@ -89,17 +89,24 @@ export const CommunityCategory = {
   culture: 'culture',
   housing: 'housing',
   general: 'general',
+  campus: 'campus',
+  centro: 'centro',
+  curso: 'curso',
 } as const;
 
 export interface Community {
   id: number;
   name: string;
   description: string;
-  category: CommunityCategory;
+  category: string;
+  /** @nullable */
+  parentId?: number | null;
+  childrenCount: number;
   membersCount: number;
   postsCount: number;
   /** @nullable */
   imageUrl?: string | null;
+  isFixed: boolean;
   createdAt: string;
 }
 
@@ -108,6 +115,8 @@ export interface CommunityInput {
   name: string;
   description: string;
   category: string;
+  /** @nullable */
+  parentId?: number | null;
 }
 
 export interface CommunityMember {
@@ -265,5 +274,6 @@ communityId?: number;
 export type ListCommunitiesParams = {
 search?: string;
 category?: string;
+/** When provided, returns children of this community ID. Omit for root-level communities. */
+parentId?: number;
 };
-
