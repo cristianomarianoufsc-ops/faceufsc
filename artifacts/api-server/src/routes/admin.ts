@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { appSettingsTable, usersTable, postsTable, communitiesTable } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, inArray } from "drizzle-orm";
 import { generateAllCommunities } from "../lib/seed-communities";
 
 const router = Router();
@@ -133,6 +133,28 @@ router.delete("/admin/posts/:id", requireAdmin, async (req, res): Promise<void> 
   } catch (err) {
     req.log.error(err);
     res.status(500).json({ error: "Erro interno." });
+  }
+});
+
+// ─── Remover categorias de comunidades fixas ─────────────────────────────────
+// DELETE /admin/purge-community-categories
+// Body: { categories: string[] }
+router.delete("/admin/purge-community-categories", requireAdmin, async (req, res): Promise<void> => {
+  try {
+    const { categories } = req.body as { categories?: string[] };
+    if (!Array.isArray(categories) || categories.length === 0) {
+      res.status(400).json({ error: "Informe um array 'categories' não vazio." });
+      return;
+    }
+    const deleted = await db
+      .delete(communitiesTable)
+      .where(inArray(communitiesTable.category, categories))
+      .returning({ id: communitiesTable.id });
+    req.log.info({ deleted: deleted.length, categories }, "Categorias de comunidades removidas");
+    res.json({ deleted: deleted.length, categories });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Erro ao remover categorias." });
   }
 });
 

@@ -127,49 +127,6 @@ const CENTRO_COMMUNITIES: CommunityData[] = [
   },
 ];
 
-// ─── Por moradia oficial ─────────────────────────────────────────────────────
-const MORADIA_COMMUNITIES: CommunityData[] = [
-  { name: "CEU — Bloco A", description: "Casa do Estudante Universitário da UFSC — Bloco A. Moradia estudantil no campus de Florianópolis.", category: "moradia", isFixed: true },
-  { name: "CEU — Bloco B", description: "Casa do Estudante Universitário da UFSC — Bloco B. Moradia estudantil no campus de Florianópolis.", category: "moradia", isFixed: true },
-  { name: "CEU — Bloco C", description: "Casa do Estudante Universitário da UFSC — Bloco C. Moradia estudantil no campus de Florianópolis.", category: "moradia", isFixed: true },
-  { name: "CEU — Bloco D", description: "Casa do Estudante Universitário da UFSC — Bloco D. Moradia estudantil no campus de Florianópolis.", category: "moradia", isFixed: true },
-  { name: "CEU — Bloco E", description: "Casa do Estudante Universitário da UFSC — Bloco E. Moradia estudantil no campus de Florianópolis.", category: "moradia", isFixed: true },
-  { name: "CEU — Bloco F", description: "Casa do Estudante Universitário da UFSC — Bloco F. Moradia estudantil no campus de Florianópolis.", category: "moradia", isFixed: true },
-  { name: "CEU — Bloco G", description: "Casa do Estudante Universitário da UFSC — Bloco G. Moradia estudantil no campus de Florianópolis.", category: "moradia", isFixed: true },
-  { name: "Moradia Estudantil — Joinville", description: "Moradia estudantil oficial do Campus Joinville da UFSC.", category: "moradia", isFixed: true },
-  { name: "Moradia Estudantil — Araranguá", description: "Moradia estudantil oficial do Campus Araranguá da UFSC.", category: "moradia", isFixed: true },
-  { name: "Moradia Estudantil — Curitibanos", description: "Moradia estudantil oficial do Campus Curitibanos da UFSC.", category: "moradia", isFixed: true },
-  { name: "Moradia Estudantil — Blumenau", description: "Moradia estudantil oficial do Campus Blumenau da UFSC.", category: "moradia", isFixed: true },
-];
-
-// ─── Entidades fixas ─────────────────────────────────────────────────────────
-const ENTIDADE_COMMUNITIES: CommunityData[] = [
-  { name: "DCE — Diretório Central dos Estudantes", description: "Diretório Central dos Estudantes da UFSC. Representação máxima do movimento estudantil universitário.", category: "entidade", isFixed: true },
-  { name: "CA de Sistemas de Informação", description: "Centro Acadêmico de Sistemas de Informação da UFSC. Representa os estudantes do curso no CTC.", category: "entidade", isFixed: true },
-  { name: "CA de Ciência da Computação", description: "Centro Acadêmico de Ciência da Computação da UFSC. Representa os estudantes do curso no CTC.", category: "entidade", isFixed: true },
-  { name: "CA de Engenharia de Computação", description: "Centro Acadêmico de Engenharia de Computação da UFSC. Representa os estudantes do curso no CTC.", category: "entidade", isFixed: true },
-  { name: "CA de Medicina", description: "Centro Acadêmico de Medicina da UFSC (CAMED). Representa os estudantes de medicina em Florianópolis.", category: "entidade", isFixed: true },
-  { name: "CA de Direito", description: "Centro Acadêmico de Direito da UFSC. Representa os estudantes do CCJ.", category: "entidade", isFixed: true },
-  { name: "CA de Engenharia Civil", description: "Centro Acadêmico de Engenharia Civil da UFSC. Representa os estudantes do curso no CTC.", category: "entidade", isFixed: true },
-  { name: "CA de Engenharia Elétrica", description: "Centro Acadêmico de Engenharia Elétrica da UFSC. Representa os estudantes do curso no CTC.", category: "entidade", isFixed: true },
-  { name: "CA de Engenharia Mecânica", description: "Centro Acadêmico de Engenharia Mecânica da UFSC. Representa os estudantes do curso no CTC.", category: "entidade", isFixed: true },
-  { name: "CA de Arquitetura e Urbanismo", description: "Centro Acadêmico de Arquitetura e Urbanismo da UFSC. Representa os estudantes do curso no CTC.", category: "entidade", isFixed: true },
-  { name: "CA de Psicologia", description: "Centro Acadêmico de Psicologia da UFSC. Representa os estudantes do curso no CFH.", category: "entidade", isFixed: true },
-  { name: "CA de Administração", description: "Centro Acadêmico de Administração da UFSC. Representa os estudantes do curso no CSE.", category: "entidade", isFixed: true },
-  { name: "CA de Ciências Econômicas", description: "Centro Acadêmico de Ciências Econômicas da UFSC. Representa os estudantes do curso no CSE.", category: "entidade", isFixed: true },
-  { name: "CA de Ciências Contábeis", description: "Centro Acadêmico de Ciências Contábeis da UFSC. Representa os estudantes do curso no CSE.", category: "entidade", isFixed: true },
-  { name: "CA de Enfermagem", description: "Centro Acadêmico de Enfermagem da UFSC. Representa os estudantes do curso no CCS.", category: "entidade", isFixed: true },
-  { name: "CA de Odontologia", description: "Centro Acadêmico de Odontologia da UFSC. Representa os estudantes do curso no CCS.", category: "entidade", isFixed: true },
-  { name: "CA de Farmácia", description: "Centro Acadêmico de Farmácia da UFSC. Representa os estudantes do curso no CCS.", category: "entidade", isFixed: true },
-  { name: "CA de Física", description: "Centro Acadêmico de Física da UFSC. Representa os estudantes do curso no CFM.", category: "entidade", isFixed: true },
-  { name: "CA de Química", description: "Centro Acadêmico de Química da UFSC. Representa os estudantes do curso no CFM.", category: "entidade", isFixed: true },
-  { name: "CA de Matemática", description: "Centro Acadêmico de Matemática da UFSC. Representa os estudantes do curso no CFM.", category: "entidade", isFixed: true },
-  { name: "CA de Pedagogia", description: "Centro Acadêmico de Pedagogia da UFSC. Representa os estudantes do curso no CED.", category: "entidade", isFixed: true },
-  { name: "CA de Jornalismo", description: "Centro Acadêmico de Jornalismo da UFSC. Representa os estudantes do curso no CCE.", category: "entidade", isFixed: true },
-  { name: "CA de Design", description: "Centro Acadêmico de Design da UFSC. Representa os estudantes do curso no CCE.", category: "entidade", isFixed: true },
-  { name: "CA de Educação Física", description: "Centro Acadêmico de Educação Física da UFSC. Representa os estudantes do curso no CDS.", category: "entidade", isFixed: true },
-];
-
 // ─── Por curso ───────────────────────────────────────────────────────────────
 interface CourseEntry { name: string; department: string; }
 
@@ -285,43 +242,11 @@ function buildCursoCommunities(): CommunityData[] {
   }));
 }
 
-// ─── Turmas ──────────────────────────────────────────────────────────────────
-const TURMA_COURSES = [
-  "Sistemas de Informação", "Ciência da Computação", "Engenharia de Computação",
-  "Medicina", "Direito", "Engenharia Civil", "Engenharia Elétrica",
-  "Engenharia Mecânica", "Arquitetura e Urbanismo", "Psicologia",
-  "Administração", "Ciências Econômicas", "Enfermagem", "Odontologia",
-  "Farmácia", "Educação Física", "Jornalismo", "Design",
-];
-
-const TURMA_YEARS = [2021, 2022, 2023, 2024, 2025];
-const TURMA_SEMESTERS = [1, 2];
-
-function buildTurmaCommunities(): CommunityData[] {
-  const result: CommunityData[] = [];
-  for (const course of TURMA_COURSES) {
-    for (const year of TURMA_YEARS) {
-      for (const sem of TURMA_SEMESTERS) {
-        result.push({
-          name: `${course} ${year}.${sem}`,
-          description: `Turma de ${course} que ingressou em ${year}.${sem} na UFSC. Espaço para troca de informações, dúvidas sobre disciplinas e organização da turma.`,
-          category: "turma",
-          isFixed: true,
-        });
-      }
-    }
-  }
-  return result;
-}
-
 // ─── Export ──────────────────────────────────────────────────────────────────
 export function generateAllCommunities(): CommunityData[] {
   return [
     ...CAMPUS_COMMUNITIES,
     ...CENTRO_COMMUNITIES,
-    ...MORADIA_COMMUNITIES,
-    ...ENTIDADE_COMMUNITIES,
     ...buildCursoCommunities(),
-    ...buildTurmaCommunities(),
   ];
 }
