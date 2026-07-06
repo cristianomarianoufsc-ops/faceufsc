@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { appSettingsTable, usersTable, postsTable, communitiesTable } from "@workspace/db";
-import { eq, desc, inArray, and, isNull } from "drizzle-orm";
+import { eq, desc, inArray, and, isNull, notInArray } from "drizzle-orm";
 import { CAMPUS_SEED, CENTRO_SEED, CURSO_SEED, buildCursoDescription } from "../lib/seed-communities";
 
 const router = Router();
@@ -258,8 +258,19 @@ router.post("/admin/seed-communities", requireAdmin, async (req, res): Promise<v
       if (isNew) created++; else updated++;
     }
 
+    // ── Limpeza: remove comunidades fixas obsoletas (não estão no seed atual) ──
+    const allSeedNames = [
+      ...CAMPUS_SEED.map(c => c.name),
+      ...CENTRO_SEED.map(c => c.name),
+      ...CURSO_SEED.map(c => c.name),
+    ];
+    const purged = await db
+      .delete(communitiesTable)
+      .where(and(eq(communitiesTable.isFixed, true), notInArray(communitiesTable.name, allSeedNames)))
+      .returning({ id: communitiesTable.id });
+
     const total = CAMPUS_SEED.length + CENTRO_SEED.length + CURSO_SEED.length;
-    req.log.info({ created, total }, "Seed hierárquico de comunidades concluído");
+    req.log.info({ created, updated, purged: purged.length, total }, "Seed hierárquico de comunidades concluído");
     res.json({
       created,
       updated,
