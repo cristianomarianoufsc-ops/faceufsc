@@ -1,33 +1,20 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
-import { Users, Calendar, MessageSquare, Home, Menu, LogOut, Search, UserCheck } from "lucide-react";
+import { Users, Calendar, MessageSquare, Home, Menu, LogOut, Search } from "lucide-react";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { Input } from "./ui/input";
-import { Badge } from "./ui/badge";
 import { useAuth } from "@/contexts/auth";
-import { useListConnectionRequests, getListConnectionRequestsQueryKey } from "@workspace/api-client-react";
 
 export function Layout({ children }: { children: ReactNode }) {
   const [location, setLocation] = useLocation();
   const { user, logout } = useAuth();
-
-  const { data: pendingRequests } = useListConnectionRequests({
-    query: {
-      queryKey: getListConnectionRequestsQueryKey(),
-      enabled: !!user,
-      refetchInterval: 30000, // refetch every 30s
-    },
-  });
-
-  const pendingCount = pendingRequests?.length ?? 0;
 
   const navItems = [
     { label: "Feed", href: "/feed", icon: Home },
     { label: "Comunidades", href: "/communities", icon: MessageSquare },
     { label: "Eventos", href: "/events", icon: Calendar },
     { label: "Pessoas", href: "/people", icon: Users },
-    { label: "Conexões", href: "/connections", icon: UserCheck, badge: pendingCount },
   ];
 
   const initials = user
@@ -71,11 +58,6 @@ export function Layout({ children }: { children: ReactNode }) {
                         >
                           <Icon className="h-5 w-5" />
                           {item.label}
-                          {item.badge != null && item.badge > 0 && (
-                            <Badge className="ml-auto h-5 px-1.5 text-xs bg-secondary text-secondary-foreground">
-                              {item.badge}
-                            </Badge>
-                          )}
                         </Link>
                       );
                     })}
@@ -101,18 +83,13 @@ export function Layout({ children }: { children: ReactNode }) {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`relative px-4 py-2 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                       isActive
                         ? "bg-secondary text-secondary-foreground"
                         : "hover:bg-primary/80 text-primary-foreground"
                     }`}
                   >
                     {item.label}
-                    {item.badge != null && item.badge > 0 && (
-                      <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-secondary text-secondary-foreground text-[10px] font-bold">
-                        {item.badge > 9 ? "9+" : item.badge}
-                      </span>
-                    )}
                   </Link>
                 );
               })}
@@ -134,17 +111,9 @@ export function Layout({ children }: { children: ReactNode }) {
             </button>
 
             <Link href={user ? `/profile/${user.id}` : "/"} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              {user?.avatarUrl ? (
-                <img
-                  src={user.avatarUrl}
-                  alt={user.name}
-                  className="h-9 w-9 rounded-full object-cover border-2 border-primary-foreground/20"
-                />
-              ) : (
-                <div className="h-9 w-9 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground font-bold border-2 border-primary-foreground/20 text-sm">
-                  {initials}
-                </div>
-              )}
+              <div className="h-9 w-9 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground font-bold border-2 border-primary-foreground/20 text-sm">
+                {initials}
+              </div>
             </Link>
           </div>
         </div>
