@@ -2,9 +2,14 @@ import { useState } from "react";
 import { useRoute, useLocation } from "wouter";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Users, FileText, Send, MessageCircle, Heart, Share2, Globe, BookOpen, FlaskConical, Activity, Music, Home, Building2, ChevronRight, ArrowLeft, Layers } from "lucide-react";
-import { 
-  useGetCommunity, 
+import {
+  Users, FileText, Send, MessageCircle, Heart, Share2,
+  Globe, BookOpen, FlaskConical, Activity, Music, Home,
+  Building2, ChevronRight, ArrowLeft, Layers, CheckCircle2,
+  CalendarDays, Info, Hash,
+} from "lucide-react";
+import {
+  useGetCommunity,
   getGetCommunityQueryKey,
   useListPosts,
   getListPostsQueryKey,
@@ -28,9 +33,10 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from "@/component
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/auth";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const postSchema = z.object({
-  content: z.string().min(1, "A publicacao nao pode estar vazia"),
+  content: z.string().min(1, "A publicação não pode estar vazia"),
 });
 
 const categoryIcons: Record<string, any> = {
@@ -55,11 +61,22 @@ const categoryLabels: Record<string, string> = {
   general: "Geral",
 };
 
-const subCommunityLabel: Record<string, string> = {
-  campus: "Centros deste Campus",
-  center: "Cursos deste Centro",
-  course: "Comunidades",
+const subTabLabel: Record<string, string> = {
+  campus: "Centros",
+  center: "Cursos",
+  course: "Sub-comunidades",
   general: "Sub-comunidades",
+};
+
+const categoryColors: Record<string, string> = {
+  campus:   "from-blue-700 to-blue-900",
+  center:   "from-indigo-600 to-indigo-900",
+  course:   "from-primary to-primary/80",
+  research: "from-violet-700 to-violet-900",
+  sports:   "from-orange-600 to-orange-800",
+  culture:  "from-pink-600 to-pink-800",
+  housing:  "from-teal-600 to-teal-800",
+  general:  "from-slate-600 to-slate-800",
 };
 
 export default function CommunityDetail() {
@@ -69,9 +86,18 @@ export default function CommunityDetail() {
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [joined, setJoined] = useState(false);
 
   const { data: community, isLoading: communityLoading } = useGetCommunity(communityId, {
-    query: { enabled: !!communityId, queryKey: getGetCommunityQueryKey(communityId) }
+    query: { enabled: !!communityId, queryKey: getGetCommunityQueryKey(communityId) },
+  });
+
+  // Fetch breadcrumb parents
+  const { data: parentCommunity } = useGetCommunity(community?.parentId ?? 0, {
+    query: { enabled: !!community?.parentId, queryKey: getGetCommunityQueryKey(community?.parentId ?? 0) },
+  });
+  const { data: grandparentCommunity } = useGetCommunity(parentCommunity?.parentId ?? 0, {
+    query: { enabled: !!parentCommunity?.parentId, queryKey: getGetCommunityQueryKey(parentCommunity?.parentId ?? 0) },
   });
 
   const { data: posts, isLoading: postsLoading } = useListPosts(
@@ -99,7 +125,7 @@ export default function CommunityDetail() {
         onSuccess: () => {
           form.reset();
           queryClient.invalidateQueries({ queryKey: getListPostsQueryKey({ communityId }) });
-          toast({ title: "Publicação criada", description: "Sua publicação foi compartilhada na comunidade." });
+          toast({ title: "Publicação criada!", description: `Compartilhado em ${community?.name}.` });
         },
       }
     );
@@ -110,8 +136,9 @@ export default function CommunityDetail() {
       { id: communityId, data: { userId: user?.id ?? 1 } },
       {
         onSuccess: () => {
+          setJoined(true);
           queryClient.invalidateQueries({ queryKey: getGetCommunityQueryKey(communityId) });
-          toast({ title: "Participando!", description: "Você agora é membro desta comunidade." });
+          toast({ title: "Bem-vindo(a)!", description: `Você agora faz parte de ${community?.name}.` });
         },
       }
     );
@@ -121,9 +148,11 @@ export default function CommunityDetail() {
     return (
       <Layout>
         <div className="max-w-5xl mx-auto space-y-6">
-          <Skeleton className="h-48 w-full rounded-xl" />
+          <Skeleton className="h-6 w-48" />
+          <Skeleton className="h-52 w-full rounded-xl" />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-2 space-y-4">
+              <Skeleton className="h-10 w-full" />
               <Skeleton className="h-32 w-full" />
               <Skeleton className="h-48 w-full" />
             </div>
@@ -137,230 +166,397 @@ export default function CommunityDetail() {
   if (!community) return <Layout><div className="text-center py-20">Comunidade não encontrada</div></Layout>;
 
   const Icon = categoryIcons[community.category] || Globe;
-  const hasSubCommunities = (community.childrenCount ?? 0) > 0 || (subCommunities && subCommunities.length > 0);
-  const subLabel = subCommunityLabel[community.category] ?? "Sub-comunidades";
+  const hasSubCommunities = (subCommunities?.length ?? 0) > 0;
+  const subLabel = subTabLabel[community.category] ?? "Sub-comunidades";
+  const heroGradient = categoryColors[community.category] ?? "from-primary to-primary/80";
+
+  // Build breadcrumb trail
+  const breadcrumbs = [
+    { label: "Comunidades", path: "/communities" },
+    grandparentCommunity ? { label: grandparentCommunity.name, path: `/communities/${grandparentCommunity.id}` } : null,
+    parentCommunity ? { label: parentCommunity.name, path: `/communities/${parentCommunity.id}` } : null,
+  ].filter(Boolean) as { label: string; path: string }[];
 
   return (
     <Layout>
-      <div className="max-w-5xl mx-auto space-y-6">
-        {/* Back button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-muted-foreground hover:text-foreground -ml-2"
-          onClick={() => setLocation("/communities")}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Comunidades
-        </Button>
+      <div className="max-w-5xl mx-auto space-y-5">
+
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-1 text-sm text-muted-foreground flex-wrap">
+          {breadcrumbs.map((crumb, i) => (
+            <span key={crumb.path} className="flex items-center gap-1">
+              {i > 0 && <ChevronRight className="h-3.5 w-3.5 shrink-0" />}
+              <button
+                onClick={() => setLocation(crumb.path)}
+                className="hover:text-primary transition-colors hover:underline"
+              >
+                {crumb.label}
+              </button>
+            </span>
+          ))}
+          <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+          <span className="text-foreground font-medium truncate max-w-[200px]">{community.name}</span>
+        </nav>
 
         {/* Hero */}
-        <div className="bg-gradient-to-r from-primary to-primary/80 rounded-xl text-primary-foreground p-8 relative overflow-hidden shadow-md">
-          <div className="absolute right-0 top-0 opacity-10 transform translate-x-1/4 -translate-y-1/4">
-            <Icon className="w-64 h-64" />
+        <div className={`bg-gradient-to-br ${heroGradient} rounded-2xl text-white p-8 relative overflow-hidden shadow-lg`}>
+          <div className="absolute right-0 top-0 opacity-10 transform translate-x-1/4 -translate-y-1/4 pointer-events-none">
+            <Icon className="w-72 h-72" />
           </div>
           <div className="relative z-10">
-            <div className="flex items-center gap-2 mb-4">
-              <Badge variant="secondary" className="bg-secondary/20 text-secondary border-none px-3 py-1 uppercase tracking-widest text-xs font-bold">
+            <div className="flex items-center gap-2 mb-3">
+              <Badge className="bg-white/20 text-white border-none px-3 py-1 uppercase tracking-widest text-xs font-bold backdrop-blur-sm">
                 {categoryLabels[community.category] ?? community.category}
               </Badge>
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">{community.name}</h1>
-            <p className="text-primary-foreground/80 text-lg max-w-2xl leading-relaxed mb-8">
+            <h1 className="text-3xl md:text-4xl font-bold mb-3 leading-tight">{community.name}</h1>
+            <p className="text-white/80 text-base max-w-2xl leading-relaxed mb-6">
               {community.description}
             </p>
-            <div className="flex flex-wrap items-center gap-4 text-sm font-medium">
-              <div className="flex items-center gap-1.5 bg-primary-foreground/10 px-3 py-1.5 rounded-full">
-                <Users className="h-4 w-4 text-secondary" /> {community.membersCount} Membros
+            <div className="flex flex-wrap items-center gap-3 text-sm font-medium">
+              <div className="flex items-center gap-1.5 bg-white/15 px-3 py-1.5 rounded-full backdrop-blur-sm">
+                <Users className="h-4 w-4" /> {community.membersCount} Membros
               </div>
-              <div className="flex items-center gap-1.5 bg-primary-foreground/10 px-3 py-1.5 rounded-full">
-                <FileText className="h-4 w-4 text-secondary" /> {community.postsCount} Publicações
+              <div className="flex items-center gap-1.5 bg-white/15 px-3 py-1.5 rounded-full backdrop-blur-sm">
+                <FileText className="h-4 w-4" /> {community.postsCount} Publicações
               </div>
               {hasSubCommunities && (
-                <div className="flex items-center gap-1.5 bg-primary-foreground/10 px-3 py-1.5 rounded-full">
-                  <Layers className="h-4 w-4 text-secondary" /> {subCommunities?.length ?? community.childrenCount} {subLabel}
+                <div className="flex items-center gap-1.5 bg-white/15 px-3 py-1.5 rounded-full backdrop-blur-sm">
+                  <Layers className="h-4 w-4" /> {subCommunities?.length} {subLabel}
                 </div>
               )}
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Main column */}
-          <div className="md:col-span-2 space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Main content */}
+          <div className="md:col-span-2">
+            <Tabs defaultValue="feed" className="space-y-4">
+              <TabsList className="w-full justify-start border-b rounded-none bg-transparent h-auto pb-0 px-0">
+                <TabsTrigger
+                  value="feed"
+                  className="rounded-t-lg rounded-b-none border border-b-0 data-[state=active]:bg-card data-[state=active]:shadow-none data-[state=inactive]:border-transparent gap-2"
+                >
+                  <Hash className="h-4 w-4" /> Publicações
+                </TabsTrigger>
+                {hasSubCommunities && (
+                  <TabsTrigger
+                    value="subcommunities"
+                    className="rounded-t-lg rounded-b-none border border-b-0 data-[state=active]:bg-card data-[state=active]:shadow-none data-[state=inactive]:border-transparent gap-2"
+                  >
+                    <Layers className="h-4 w-4" /> {subLabel}
+                    <span className="ml-1 bg-primary/10 text-primary text-xs font-bold px-1.5 py-0.5 rounded-full">
+                      {subCommunities?.length}
+                    </span>
+                  </TabsTrigger>
+                )}
+                <TabsTrigger
+                  value="about"
+                  className="rounded-t-lg rounded-b-none border border-b-0 data-[state=active]:bg-card data-[state=active]:shadow-none data-[state=inactive]:border-transparent gap-2"
+                >
+                  <Info className="h-4 w-4" /> Sobre
+                </TabsTrigger>
+              </TabsList>
 
-            {/* Sub-communities section */}
-            {hasSubCommunities && (
-              <Card className="border-primary/10 shadow-sm">
-                <CardHeader className="pb-3">
-                  <h3 className="font-bold text-lg flex items-center gap-2">
-                    <Layers className="h-5 w-5 text-primary" />
-                    {subLabel}
-                  </h3>
-                </CardHeader>
-                <CardContent className="p-4 pt-0">
+              {/* FEED TAB */}
+              <TabsContent value="feed" className="space-y-4 mt-0">
+                {/* Post creation */}
+                <Card className="border-primary/10 shadow-sm">
+                  <CardContent className="p-4 sm:p-6">
+                    <Form {...form}>
+                      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        <div className="flex gap-3">
+                          <Avatar className="h-9 w-9 border border-border shrink-0 hidden sm:block">
+                            {user?.avatarUrl ? <AvatarImage src={user.avatarUrl} /> : null}
+                            <AvatarFallback className="bg-primary text-primary-foreground text-xs font-bold">
+                              {user ? user.name.split(" ").map((n: string) => n[0]).join("").substring(0, 2).toUpperCase() : "?"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <FormField
+                            control={form.control}
+                            name="content"
+                            render={({ field }) => (
+                              <FormItem className="flex-1">
+                                <FormControl>
+                                  <Textarea
+                                    placeholder={`Publique algo em ${community.name}...`}
+                                    className="min-h-[90px] resize-none border-primary/20 focus-visible:ring-primary text-sm"
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        <div className="flex justify-end">
+                          <Button
+                            type="submit"
+                            disabled={createPost.isPending || !form.watch("content")}
+                            size="sm"
+                            className="rounded-full px-5"
+                          >
+                            {createPost.isPending ? "Publicando..." : "Publicar"}
+                            <Send className="ml-2 h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </form>
+                    </Form>
+                  </CardContent>
+                </Card>
+
+                {/* Posts */}
+                {postsLoading ? (
+                  <div className="space-y-4">
+                    {[1, 2].map(i => <Skeleton key={i} className="h-36 w-full" />)}
+                  </div>
+                ) : posts?.length === 0 ? (
+                  <div className="text-center py-14 text-muted-foreground border rounded-xl bg-card border-dashed border-primary/20">
+                    <FileText className="mx-auto h-10 w-10 mb-3 opacity-30" />
+                    <p className="font-medium">Nenhuma publicação ainda</p>
+                    <p className="text-sm mt-1">Seja o primeiro a compartilhar algo nesta comunidade!</p>
+                  </div>
+                ) : (
+                  posts?.map((post) => (
+                    <Card key={post.id} className="border-primary/10 overflow-hidden hover:shadow-md transition-shadow">
+                      <CardHeader className="flex flex-row items-start gap-3 pb-3 pt-4">
+                        <Avatar className="h-9 w-9 border border-border shrink-0">
+                          {post.authorAvatarUrl ? <AvatarImage src={post.authorAvatarUrl} alt={post.authorName} /> : null}
+                          <AvatarFallback className="bg-primary text-primary-foreground text-xs font-bold">
+                            {post.authorName.substring(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-1 justify-between">
+                            <span className="font-semibold text-sm text-foreground">{post.authorName}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {format(new Date(post.createdAt), "d MMM, HH:mm", { locale: ptBR })}
+                            </span>
+                          </div>
+                          <span className="text-xs text-muted-foreground">{post.authorCourse}</span>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pb-3 px-4">
+                        <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{post.content}</p>
+                      </CardContent>
+                      <CardFooter className="flex justify-start gap-1 border-t bg-muted/20 py-2 px-4">
+                        <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-red-500 rounded-full h-8 px-3 text-xs">
+                          <Heart className="mr-1.5 h-3.5 w-3.5" /> {post.likesCount}
+                        </Button>
+                        <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary rounded-full h-8 px-3 text-xs">
+                          <MessageCircle className="mr-1.5 h-3.5 w-3.5" /> {post.commentsCount}
+                        </Button>
+                        <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary rounded-full h-8 px-3 text-xs">
+                          <Share2 className="mr-1.5 h-3.5 w-3.5" /> Compartilhar
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                  ))
+                )}
+              </TabsContent>
+
+              {/* SUB-COMMUNITIES TAB */}
+              {hasSubCommunities && (
+                <TabsContent value="subcommunities" className="mt-0">
                   {subLoading ? (
-                    <div className="space-y-2">
-                      {[1, 2, 3].map(i => <Skeleton key={i} className="h-14 w-full" />)}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-36 w-full rounded-xl" />)}
                     </div>
                   ) : (
-                    <div className="divide-y divide-border/50">
-                      {subCommunities?.map((sub) => {
-                        const SubIcon = categoryIcons[sub.category] || Globe;
-                        return (
-                          <button
-                            key={sub.id}
-                            className="w-full flex items-center gap-4 py-3 px-2 hover:bg-muted/50 rounded-lg transition-colors text-left group"
-                            onClick={() => setLocation(`/communities/${sub.id}`)}
-                          >
-                            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                              <SubIcon className="h-5 w-5 text-primary" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-foreground group-hover:text-primary transition-colors truncate">
-                                {sub.name}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {sub.membersCount} membros · {sub.postsCount} publicações
-                                {(sub.childrenCount ?? 0) > 0 && ` · ${sub.childrenCount} sub-comunidades`}
-                              </p>
-                            </div>
-                            <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
-                          </button>
-                        );
-                      })}
+                    <>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        {subLabel} dentro de <span className="font-medium text-foreground">{community.name}</span> — cada uma com suas próprias publicações, membros e funcionalidades.
+                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {subCommunities?.map((sub) => {
+                          const SubIcon = categoryIcons[sub.category] || Globe;
+                          const subGradient = categoryColors[sub.category] ?? "from-primary to-primary/80";
+                          const hasSubChildren = (sub.childrenCount ?? 0) > 0;
+                          return (
+                            <Card
+                              key={sub.id}
+                              className="border-primary/10 hover:shadow-md transition-all hover:border-primary/30 cursor-pointer group overflow-hidden flex flex-col"
+                              onClick={() => setLocation(`/communities/${sub.id}`)}
+                            >
+                              <div className={`h-16 bg-gradient-to-r ${subGradient} flex items-center justify-center relative`}>
+                                <SubIcon className="h-8 w-8 text-white/20" />
+                                {hasSubChildren && (
+                                  <Badge className="absolute top-2 right-2 bg-white/20 text-white border-none text-xs backdrop-blur-sm">
+                                    {sub.childrenCount} sub
+                                  </Badge>
+                                )}
+                              </div>
+                              <CardContent className="p-4 flex-1">
+                                <h4 className="font-semibold text-foreground group-hover:text-primary transition-colors leading-tight mb-1">
+                                  {sub.name}
+                                </h4>
+                                <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+                                  {sub.description}
+                                </p>
+                                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                  <span className="flex items-center gap-1">
+                                    <Users className="h-3 w-3" /> {sub.membersCount}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <FileText className="h-3 w-3" /> {sub.postsCount}
+                                  </span>
+                                  {hasSubChildren && (
+                                    <span className="flex items-center gap-1">
+                                      <Layers className="h-3 w-3" /> {sub.childrenCount}
+                                    </span>
+                                  )}
+                                </div>
+                              </CardContent>
+                              <div className="px-4 pb-4">
+                                <div className="flex items-center justify-between text-xs text-primary font-medium group-hover:underline">
+                                  <span>Entrar na comunidade</span>
+                                  <ChevronRight className="h-3.5 w-3.5" />
+                                </div>
+                              </div>
+                            </Card>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+                </TabsContent>
+              )}
+
+              {/* ABOUT TAB */}
+              <TabsContent value="about" className="mt-0">
+                <Card className="border-primary/10">
+                  <CardContent className="p-6 space-y-4">
+                    <div>
+                      <h4 className="text-sm font-semibold text-foreground mb-1">Descrição</h4>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{community.description}</p>
                     </div>
+                    <div className="grid grid-cols-2 gap-4 pt-2">
+                      <div className="bg-muted/40 rounded-lg p-3 text-center">
+                        <p className="text-2xl font-bold text-foreground">{community.membersCount}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Membros</p>
+                      </div>
+                      <div className="bg-muted/40 rounded-lg p-3 text-center">
+                        <p className="text-2xl font-bold text-foreground">{community.postsCount}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Publicações</p>
+                      </div>
+                      {hasSubCommunities && (
+                        <div className="bg-muted/40 rounded-lg p-3 text-center col-span-2">
+                          <p className="text-2xl font-bold text-foreground">{subCommunities?.length}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{subLabel}</p>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2 border-t">
+                      <CalendarDays className="h-4 w-4 shrink-0" />
+                      Criada em {format(new Date(community.createdAt), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                    </div>
+                    {parentCommunity && (
+                      <div className="pt-2 border-t">
+                        <p className="text-xs text-muted-foreground mb-2">Parte de</p>
+                        <button
+                          onClick={() => setLocation(`/communities/${parentCommunity.id}`)}
+                          className="flex items-center gap-2 text-sm text-primary hover:underline"
+                        >
+                          {(() => { const PI = categoryIcons[parentCommunity.category] || Globe; return <PI className="h-4 w-4" />; })()}
+                          {parentCommunity.name}
+                        </button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-4">
+            {/* Join card */}
+            <Card className="border-primary/10 sticky top-24">
+              <CardContent className="p-4 space-y-3">
+                {joined ? (
+                  <div className="flex items-center gap-2 justify-center py-2 text-green-600 font-medium text-sm">
+                    <CheckCircle2 className="h-5 w-5" />
+                    Você é membro desta comunidade
+                  </div>
+                ) : (
+                  <Button
+                    className="w-full"
+                    size="lg"
+                    onClick={handleJoin}
+                    disabled={joinCommunity.isPending}
+                  >
+                    {joinCommunity.isPending ? "Entrando..." : "Participar da Comunidade"}
+                    {!joinCommunity.isPending && <Users className="ml-2 h-4 w-4" />}
+                  </Button>
+                )}
+                <div className="text-center text-xs text-muted-foreground">
+                  {community.membersCount} {community.membersCount === 1 ? "membro" : "membros"} · {community.postsCount} {community.postsCount === 1 ? "publicação" : "publicações"}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Sub-communities quick list in sidebar */}
+            {hasSubCommunities && (
+              <Card className="border-primary/10">
+                <CardHeader className="pb-2 pt-4 px-4">
+                  <h3 className="font-semibold text-sm flex items-center gap-2">
+                    <Layers className="h-4 w-4 text-primary" />
+                    {subLabel} ({subCommunities?.length})
+                  </h3>
+                </CardHeader>
+                <CardContent className="px-4 pb-4 space-y-1">
+                  {subCommunities?.slice(0, 6).map((sub) => {
+                    const SubIcon = categoryIcons[sub.category] || Globe;
+                    return (
+                      <button
+                        key={sub.id}
+                        className="w-full flex items-center gap-2.5 py-2 px-2 hover:bg-muted/60 rounded-lg transition-colors text-left group"
+                        onClick={() => setLocation(`/communities/${sub.id}`)}
+                      >
+                        <div className="h-7 w-7 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+                          <SubIcon className="h-3.5 w-3.5 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-foreground group-hover:text-primary transition-colors truncate">
+                            {sub.name}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {sub.membersCount} membros
+                            {(sub.childrenCount ?? 0) > 0 && ` · ${sub.childrenCount} sub`}
+                          </p>
+                        </div>
+                        <ChevronRight className="h-3 w-3 text-muted-foreground group-hover:text-primary shrink-0" />
+                      </button>
+                    );
+                  })}
+                  {(subCommunities?.length ?? 0) > 6 && (
+                    <p className="text-xs text-center text-muted-foreground pt-1">
+                      +{(subCommunities?.length ?? 0) - 6} mais na aba acima
+                    </p>
                   )}
                 </CardContent>
               </Card>
             )}
 
-            {/* Post creation */}
-            <Card className="border-primary/10 shadow-sm">
-              <CardContent className="p-4 sm:p-6">
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                    <div className="flex gap-4">
-                      <Avatar className="h-10 w-10 border border-border hidden sm:block">
-                        <AvatarFallback className="bg-secondary text-secondary-foreground font-bold">
-                          {user ? user.name.split(" ").map((n: string) => n[0]).join("").substring(0,2).toUpperCase() : "?"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <FormField
-                        control={form.control}
-                        name="content"
-                        render={({ field }) => (
-                          <FormItem className="flex-1">
-                            <FormControl>
-                              <Textarea 
-                                placeholder={`Publique algo em ${community.name}...`}
-                                className="min-h-[100px] resize-none border-primary/20 focus-visible:ring-primary"
-                                {...field} 
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    <div className="flex justify-end pt-2">
-                      <Button 
-                        type="submit" 
-                        disabled={createPost.isPending || !form.watch("content")}
-                        className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-6"
-                      >
-                        {createPost.isPending ? "Publicando..." : "Publicar"}
-                        <Send className="ml-2 h-4 w-4" />
-                      </Button>
-                    </div>
-                  </form>
-                </Form>
-              </CardContent>
-            </Card>
-
-            {/* Posts feed */}
-            <div className="space-y-6">
-              {postsLoading ? (
-                <Skeleton className="h-32 w-full" />
-              ) : posts?.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground border rounded-lg bg-card">
-                  Nenhuma publicação ainda. Seja o primeiro a compartilhar algo!
-                </div>
-              ) : (
-                posts?.map((post) => (
-                  <Card key={post.id} className="border-primary/10 overflow-hidden hover:shadow-md transition-shadow">
-                    <CardHeader className="flex flex-row items-start gap-4 pb-4">
-                      <Avatar className="h-10 w-10 border border-border">
-                        {post.authorAvatarUrl ? (
-                          <AvatarImage src={post.authorAvatarUrl} alt={post.authorName} />
-                        ) : null}
-                        <AvatarFallback className="bg-primary text-primary-foreground">
-                          {post.authorName.substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 flex flex-col">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between">
-                          <span className="font-semibold text-foreground hover:underline cursor-pointer">
-                            {post.authorName}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {format(new Date(post.createdAt), "MMM d, h:mm a")}
-                          </span>
-                        </div>
-                        <span className="text-sm text-muted-foreground">{post.authorCourse}</span>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pb-4">
-                      <p className="text-foreground whitespace-pre-wrap">{post.content}</p>
-                    </CardContent>
-                    <CardFooter className="flex justify-between border-t bg-muted/20 py-3">
-                      <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary rounded-full">
-                        <Heart className="mr-2 h-4 w-4" /> {post.likesCount}
-                      </Button>
-                      <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary rounded-full">
-                        <MessageCircle className="mr-2 h-4 w-4" /> {post.commentsCount}
-                      </Button>
-                      <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary rounded-full">
-                        <Share2 className="mr-2 h-4 w-4" /> Compartilhar
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            <Card className="border-primary/10 sticky top-24">
-              <CardHeader>
-                <h3 className="font-bold text-lg">Sobre a Comunidade</h3>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Criada em {format(new Date(community.createdAt), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                </p>
-                {community.parentId && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full justify-start text-muted-foreground hover:text-primary"
-                    onClick={() => setLocation(`/communities/${community.parentId}`)}
+            {/* Parent link */}
+            {parentCommunity && (
+              <Card className="border-primary/10">
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Parte de</p>
+                  <button
+                    onClick={() => setLocation(`/communities/${parentCommunity.id}`)}
+                    className="flex items-center gap-2 text-sm text-foreground hover:text-primary transition-colors group w-full"
                   >
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Ver comunidade pai
-                  </Button>
-                )}
-                <Button 
-                  className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90" 
-                  size="lg"
-                  onClick={handleJoin}
-                  disabled={joinCommunity.isPending}
-                >
-                  {joinCommunity.isPending ? "Entrando..." : "Participar da Comunidade"}
-                </Button>
-              </CardContent>
-            </Card>
+                    <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      {(() => { const PI = categoryIcons[parentCommunity.category] || Globe; return <PI className="h-4 w-4 text-primary" />; })()}
+                    </div>
+                    <span className="font-medium group-hover:underline flex-1 text-left">{parentCommunity.name}</span>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
+                  </button>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>
