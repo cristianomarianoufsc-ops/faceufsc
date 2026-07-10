@@ -19,8 +19,6 @@ tags:
     description: University events
   - name: feed
     description: Activity feed
-  - name: connections
-    description: User connections
 paths:
   /healthz:
     get:
@@ -134,50 +132,6 @@ paths:
         "204":
           description: Post deleted
 
-  /posts/{id}/comments:
-    get:
-      operationId: listComments
-      tags: [posts]
-      summary: List comments for a post
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: List of comments
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Comment"
-    post:
-      operationId: createComment
-      tags: [posts]
-      summary: Add a comment to a post
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CommentInput"
-      responses:
-        "201":
-          description: Comment created
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Comment"
-
   /communities:
     get:
       operationId: listCommunities
@@ -194,9 +148,12 @@ paths:
             type: string
         - name: parentId
           in: query
-          description: Return children of this community ID. Omit for root-level communities.
           schema:
             type: integer
+        - name: topLevel
+          in: query
+          schema:
+            type: boolean
       responses:
         "200":
           description: List of communities
@@ -242,48 +199,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Community"
-
-  /communities/{id}/children:
-    get:
-      operationId: getCommunityChildren
-      tags: [communities]
-      summary: List direct child communities
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: List of child communities
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Community"
-
-  /communities/{id}/members:
-    get:
-      operationId: listCommunityMembers
-      tags: [communities]
-      summary: List members of a community
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: List of community members
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/CommunityMember"
 
   /communities/{id}/join:
     post:
@@ -389,106 +304,6 @@ paths:
                 items:
                   $ref: "#/components/schemas/ActivityItem"
 
-  /connections:
-    get:
-      operationId: listConnections
-      tags: [connections]
-      summary: List my accepted connections
-      responses:
-        "200":
-          description: List of accepted connections
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Connection"
-    post:
-      operationId: sendConnectionRequest
-      tags: [connections]
-      summary: Send a connection request
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ConnectionRequest"
-      responses:
-        "201":
-          description: Connection request sent
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Connection"
-
-  /connections/requests:
-    get:
-      operationId: listConnectionRequests
-      tags: [connections]
-      summary: List pending connection requests I received
-      responses:
-        "200":
-          description: List of pending requests
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Connection"
-
-  /connections/status/{userId}:
-    get:
-      operationId: getConnectionStatus
-      tags: [connections]
-      summary: Get connection status with a specific user
-      parameters:
-        - name: userId
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: Connection status
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ConnectionStatus"
-
-  /connections/{id}:
-    patch:
-      operationId: updateConnection
-      tags: [connections]
-      summary: Accept or reject a connection request
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ConnectionAction"
-      responses:
-        "204":
-          description: Connection updated
-    delete:
-      operationId: deleteConnection
-      tags: [connections]
-      summary: Cancel a request or remove a connection
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "204":
-          description: Connection removed
-
 components:
   schemas:
     HealthStatus:
@@ -593,43 +408,6 @@ components:
         - content
         - authorId
 
-    Comment:
-      type: object
-      properties:
-        id:
-          type: integer
-        postId:
-          type: integer
-        authorId:
-          type: integer
-        authorName:
-          type: string
-        authorAvatarUrl:
-          type: ["string", "null"]
-        authorCourse:
-          type: string
-        content:
-          type: string
-        createdAt:
-          type: string
-      required:
-        - id
-        - postId
-        - authorId
-        - authorName
-        - authorCourse
-        - content
-        - createdAt
-
-    CommentInput:
-      type: object
-      properties:
-        content:
-          type: string
-          minLength: 1
-      required:
-        - content
-
     Community:
       type: object
       properties:
@@ -641,19 +419,17 @@ components:
           type: string
         category:
           type: string
-          enum: [campus, centro, curso, course, research, sports, culture, housing, general]
-        parentId:
-          type: ["integer", "null"]
-        childrenCount:
-          type: integer
+          enum: [campus, center, course, research, sports, culture, housing, general]
         membersCount:
           type: integer
         postsCount:
           type: integer
         imageUrl:
           type: ["string", "null"]
-        isFixed:
-          type: boolean
+        parentId:
+          type: ["integer", "null"]
+        childrenCount:
+          type: integer
         createdAt:
           type: string
       required:
@@ -661,9 +437,9 @@ components:
         - name
         - description
         - category
-        - childrenCount
         - membersCount
         - postsCount
+        - childrenCount
         - createdAt
 
     CommunityInput:
@@ -677,36 +453,11 @@ components:
         category:
           type: string
         parentId:
-          type: ["integer", "null"]
+          type: integer
       required:
         - name
         - description
         - category
-
-    CommunityMember:
-      type: object
-      properties:
-        id:
-          type: integer
-        userId:
-          type: integer
-        name:
-          type: string
-        avatarUrl:
-          type: ["string", "null"]
-        course:
-          type: string
-        role:
-          type: string
-        joinedAt:
-          type: string
-      required:
-        - id
-        - userId
-        - name
-        - course
-        - role
-        - joinedAt
 
     JoinInput:
       type: object
@@ -830,69 +581,3 @@ components:
         - actorName
         - description
         - createdAt
-
-    Connection:
-      type: object
-      properties:
-        id:
-          type: integer
-        requesterId:
-          type: integer
-        receiverId:
-          type: integer
-        status:
-          type: string
-          enum: [pending, accepted]
-        requesterName:
-          type: string
-        requesterAvatarUrl:
-          type: ["string", "null"]
-        requesterCourse:
-          type: string
-        receiverName:
-          type: string
-        receiverAvatarUrl:
-          type: ["string", "null"]
-        receiverCourse:
-          type: string
-        createdAt:
-          type: string
-      required:
-        - id
-        - requesterId
-        - receiverId
-        - status
-        - requesterName
-        - requesterCourse
-        - receiverName
-        - receiverCourse
-        - createdAt
-
-    ConnectionStatus:
-      type: object
-      properties:
-        status:
-          type: string
-          enum: [none, pending_sent, pending_received, connected]
-        connectionId:
-          type: ["integer", "null"]
-      required:
-        - status
-        - connectionId
-
-    ConnectionRequest:
-      type: object
-      properties:
-        receiverId:
-          type: integer
-      required:
-        - receiverId
-
-    ConnectionAction:
-      type: object
-      properties:
-        action:
-          type: string
-          enum: [accept, reject]
-      required:
-        - action

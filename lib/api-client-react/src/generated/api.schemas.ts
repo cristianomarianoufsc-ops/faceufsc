@@ -62,51 +62,32 @@ export interface PostInput {
   communityId?: number | null;
 }
 
-export interface Comment {
-  id: number;
-  postId: number;
-  authorId: number;
-  authorName: string;
-  /** @nullable */
-  authorAvatarUrl?: string | null;
-  authorCourse: string;
-  content: string;
-  createdAt: string;
-}
-
-export interface CommentInput {
-  /** @minLength 1 */
-  content: string;
-}
-
 export type CommunityCategory = typeof CommunityCategory[keyof typeof CommunityCategory];
 
 
 export const CommunityCategory = {
+  campus: 'campus',
+  center: 'center',
   course: 'course',
   research: 'research',
   sports: 'sports',
   culture: 'culture',
   housing: 'housing',
   general: 'general',
-  campus: 'campus',
-  centro: 'centro',
-  curso: 'curso',
 } as const;
 
 export interface Community {
   id: number;
   name: string;
   description: string;
-  category: string;
-  /** @nullable */
-  parentId?: number | null;
-  childrenCount: number;
+  category: CommunityCategory;
   membersCount: number;
   postsCount: number;
   /** @nullable */
   imageUrl?: string | null;
-  isFixed: boolean;
+  /** @nullable */
+  parentId?: number | null;
+  childrenCount: number;
   createdAt: string;
 }
 
@@ -115,19 +96,7 @@ export interface CommunityInput {
   name: string;
   description: string;
   category: string;
-  /** @nullable */
-  parentId?: number | null;
-}
-
-export interface CommunityMember {
-  id: number;
-  userId: number;
-  name: string;
-  /** @nullable */
-  avatarUrl?: string | null;
-  course: string;
-  role: string;
-  joinedAt: string;
+  parentId?: number;
 }
 
 export interface JoinInput {
@@ -205,62 +174,6 @@ export interface ActivityItem {
   createdAt: string;
 }
 
-export type ConnectionStatusProperty = typeof ConnectionStatusProperty[keyof typeof ConnectionStatusProperty];
-
-
-export const ConnectionStatusProperty = {
-  pending: 'pending',
-  accepted: 'accepted',
-} as const;
-
-export interface Connection {
-  id: number;
-  requesterId: number;
-  receiverId: number;
-  status: ConnectionStatusProperty;
-  requesterName: string;
-  /** @nullable */
-  requesterAvatarUrl?: string | null;
-  requesterCourse: string;
-  receiverName: string;
-  /** @nullable */
-  receiverAvatarUrl?: string | null;
-  receiverCourse: string;
-  createdAt: string;
-}
-
-export type ConnectionStatusStatus = typeof ConnectionStatusStatus[keyof typeof ConnectionStatusStatus];
-
-
-export const ConnectionStatusStatus = {
-  none: 'none',
-  pending_sent: 'pending_sent',
-  pending_received: 'pending_received',
-  connected: 'connected',
-} as const;
-
-export interface ConnectionStatus {
-  status: ConnectionStatusStatus;
-  /** @nullable */
-  connectionId: number | null;
-}
-
-export interface ConnectionRequest {
-  receiverId: number;
-}
-
-export type ConnectionActionAction = typeof ConnectionActionAction[keyof typeof ConnectionActionAction];
-
-
-export const ConnectionActionAction = {
-  accept: 'accept',
-  reject: 'reject',
-} as const;
-
-export interface ConnectionAction {
-  action: ConnectionActionAction;
-}
-
 export type ListUsersParams = {
 search?: string;
 course?: string;
@@ -274,6 +187,7 @@ communityId?: number;
 export type ListCommunitiesParams = {
 search?: string;
 category?: string;
-/** When provided, returns children of this community ID. Omit for root-level communities. */
 parentId?: number;
+topLevel?: boolean;
 };
+

@@ -1,20 +1,16 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import {
-  Users, Search, Plus, BookOpen, FlaskConical, Activity, Music, Home, Globe,
-  Building2, Layers, GraduationCap, ChevronRight, ArrowRight, BookMarked,
-} from "lucide-react";
-import {
-  useListCommunities,
-  useCreateCommunity,
+import { Users, Search, Plus, BookOpen, FlaskConical, Activity, Music, Home, Globe, Building2, Layers, ChevronRight } from "lucide-react";
+import { 
+  useListCommunities, 
+  useCreateCommunity, 
   getListCommunitiesQueryKey,
-  useJoinCommunity,
+  useJoinCommunity
 } from "@workspace/api-client-react";
-import type { Community } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { Layout } from "@/components/layout";
@@ -29,166 +25,31 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 
-// ─── Category metadata ────────────────────────────────────────────────────────
-
-const CATEGORY_META: Record<string, { label: string; icon: React.ComponentType<any>; gradient: string }> = {
-  campus:   { label: "Campus",  icon: Building2,     gradient: "from-violet-600 to-purple-700" },
-  centro:   { label: "Centro",  icon: Layers,         gradient: "from-blue-600 to-blue-800" },
-  curso:    { label: "Curso",   icon: GraduationCap,  gradient: "from-indigo-500 to-indigo-700" },
-  course:   { label: "Curso",   icon: BookOpen,       gradient: "from-indigo-500 to-indigo-700" },
-  research: { label: "Pesquisa",icon: FlaskConical,   gradient: "from-emerald-600 to-teal-700" },
-  sports:   { label: "Esportes",icon: Activity,       gradient: "from-orange-500 to-red-600" },
-  culture:  { label: "Cultura", icon: Music,          gradient: "from-pink-500 to-rose-600" },
-  housing:  { label: "Moradia", icon: Home,           gradient: "from-amber-500 to-orange-600" },
-  general:  { label: "Geral",   icon: Globe,          gradient: "from-slate-500 to-slate-700" },
-};
-
-function getMeta(category: string) {
-  return CATEGORY_META[category] ?? CATEGORY_META.general;
-}
-
-// ─── User-created community categories ───────────────────────────────────────
-
-const USER_CATEGORIES = [
-  { value: "course",   label: "Curso" },
-  { value: "research", label: "Pesquisa" },
-  { value: "sports",   label: "Esportes" },
-  { value: "culture",  label: "Cultura" },
-  { value: "housing",  label: "Moradia" },
-  { value: "general",  label: "Geral" },
+const categories = [
+  { value: "campus", label: "Campus", icon: Building2 },
+  { value: "center", label: "Centro", icon: Layers },
+  { value: "course", label: "Curso", icon: BookOpen },
+  { value: "research", label: "Pesquisa", icon: FlaskConical },
+  { value: "sports", label: "Esportes", icon: Activity },
+  { value: "culture", label: "Cultura", icon: Music },
+  { value: "housing", label: "Moradia", icon: Home },
+  { value: "general", label: "Geral", icon: Globe },
 ];
 
 const createCommunitySchema = z.object({
   name: z.string().min(3, "O nome deve ter pelo menos 3 caracteres"),
-  description: z.string().min(10, "A descrição deve ter pelo menos 10 caracteres"),
+  description: z.string().min(10, "A descricao deve ter pelo menos 10 caracteres"),
   category: z.string().min(1, "Selecione uma categoria"),
 });
-
-// ─── Nav path item ────────────────────────────────────────────────────────────
-
-interface NavItem { id: number; name: string; category: string }
-
-// ─── Community card ───────────────────────────────────────────────────────────
-
-function CommunityCard({
-  community,
-  onDrillIn,
-  onJoin,
-  onNavigate,
-  joinPending,
-}: {
-  community: Community;
-  onDrillIn: (c: Community) => void;
-  onJoin: (id: number) => void;
-  onNavigate: (id: number) => void;
-  joinPending: boolean;
-}) {
-  const meta = getMeta(community.category);
-  const Icon = meta.icon;
-  const hasChildren = (community.childrenCount ?? 0) > 0;
-
-  return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -8 }}
-      transition={{ duration: 0.2 }}
-    >
-      <Card
-        className={`group overflow-hidden flex flex-col h-full border border-border/60 hover:border-primary/40 hover:shadow-lg transition-all duration-200 ${hasChildren ? "cursor-pointer" : ""}`}
-        onClick={hasChildren ? () => onDrillIn(community) : undefined}
-      >
-        {/* Hero gradient */}
-        <div className={`h-20 bg-gradient-to-r ${meta.gradient} flex items-center justify-center text-white/20`}>
-          <Icon className="h-10 w-10" />
-        </div>
-
-        <CardHeader className="pb-2">
-          <div className="flex items-start justify-between gap-2">
-            <h3
-              className={`font-bold text-base leading-tight text-foreground group-hover:text-primary transition-colors ${!hasChildren ? "cursor-pointer" : ""}`}
-              onClick={!hasChildren ? (e) => { e.stopPropagation(); onNavigate(community.id); } : undefined}
-            >
-              {community.name}
-            </h3>
-          </div>
-          <Badge variant="outline" className="w-fit text-xs gap-1 font-medium">
-            <Icon className="h-3 w-3" />
-            {meta.label}
-          </Badge>
-        </CardHeader>
-
-        <CardContent className="flex-1 pb-3">
-          <p className="text-sm text-muted-foreground line-clamp-2">
-            {community.description}
-          </p>
-
-          <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground">
-            {hasChildren ? (
-              <span className="flex items-center gap-1 font-medium text-primary">
-                <BookMarked className="h-3 w-3" />
-                {community.childrenCount} subcomunidade{(community.childrenCount ?? 0) !== 1 ? "s" : ""}
-              </span>
-            ) : (
-              <>
-                <span className="flex items-center gap-1">
-                  <Users className="h-3 w-3" />
-                  {community.membersCount} membro{community.membersCount !== 1 ? "s" : ""}
-                </span>
-                <span>•</span>
-                <span>{community.postsCount} publicações</span>
-              </>
-            )}
-          </div>
-        </CardContent>
-
-        <CardFooter className="pt-0">
-          {hasChildren ? (
-            <Button
-              variant="outline"
-              className="w-full border-primary/30 hover:bg-primary hover:text-primary-foreground transition-colors gap-1"
-              onClick={(e) => { e.stopPropagation(); onDrillIn(community); }}
-            >
-              Explorar <ArrowRight className="h-3.5 w-3.5" />
-            </Button>
-          ) : (
-            <Button
-              variant="outline"
-              className="w-full border-primary/20 hover:bg-primary hover:text-primary-foreground transition-colors"
-              onClick={(e) => { e.stopPropagation(); onJoin(community.id); }}
-              disabled={joinPending}
-            >
-              Participar
-            </Button>
-          )}
-        </CardFooter>
-      </Card>
-    </motion.div>
-  );
-}
-
-// ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function Communities() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
-  // Drill-down navigation state
-  const [navPath, setNavPath] = useState<NavItem[]>([]);
   const [search, setSearch] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
-  const currentParent = navPath.at(-1);
-
-  // Build query params
-  const queryParams = search
-    ? { search }
-    : currentParent
-      ? { parentId: currentParent.id }
-      : {};
-
+  const queryParams = search ? { search } : { topLevel: true };
   const { data: communities, isLoading } = useListCommunities(
     queryParams,
     { query: { queryKey: getListCommunitiesQueryKey(queryParams) } }
@@ -202,18 +63,9 @@ export default function Communities() {
     defaultValues: { name: "", description: "", category: "" },
   });
 
-  function drillIn(community: Community) {
-    setSearch("");
-    setNavPath(prev => [...prev, { id: community.id, name: community.name, category: community.category }]);
-  }
-
-  function navigateTo(index: number) {
-    setNavPath(prev => prev.slice(0, index));
-  }
-
   function onSubmit(values: z.infer<typeof createCommunitySchema>) {
     createCommunity.mutate(
-      { data: { ...values, parentId: currentParent?.id ?? null } },
+      { data: values },
       {
         onSuccess: (newCommunity) => {
           setIsCreateOpen(false);
@@ -226,7 +78,8 @@ export default function Communities() {
     );
   }
 
-  function handleJoin(id: number) {
+  function handleJoin(id: number, e: React.MouseEvent) {
+    e.stopPropagation();
     joinCommunity.mutate(
       { id, data: { userId: 1 } },
       {
@@ -238,161 +91,201 @@ export default function Communities() {
     );
   }
 
-  // Level label for empty state
-  const levelLabel = currentParent
-    ? getMeta(currentParent.category).label === "Campus"
-      ? "centros"
-      : "cursos"
-    : "comunidades";
-
   return (
     <Layout>
-      <div className="max-w-6xl mx-auto space-y-6">
-
-        {/* Header */}
+      <div className="max-w-6xl mx-auto space-y-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground">Comunidades</h1>
-            <p className="text-muted-foreground mt-1">
-              {currentParent
-                ? `Navegando em ${currentParent.name}`
-                : "Explore as comunidades da UFSC"}
-            </p>
+            <p className="text-muted-foreground mt-1">Encontre sua turma na UFSC</p>
           </div>
-
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                Nova comunidade
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Criar nova comunidade</DialogTitle>
-              </DialogHeader>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <FormField control={form.control} name="name" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome</FormLabel>
-                      <FormControl><Input placeholder="Nome da comunidade" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="description" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Descrição</FormLabel>
-                      <FormControl><Textarea placeholder="Sobre esta comunidade..." {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="category" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Categoria</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger><SelectValue placeholder="Selecione uma categoria" /></SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {USER_CATEGORIES.map(c => (
-                            <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <Button type="submit" className="w-full" disabled={createCommunity.isPending}>
-                    {createCommunity.isPending ? "Criando..." : "Criar comunidade"}
-                  </Button>
-                </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
+          <div className="flex items-center gap-4 w-full md:w-auto">
+            <div className="relative flex-1 md:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="Buscar comunidades..." 
+                className="pl-9 bg-card border-primary/20"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            
+            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-secondary text-secondary-foreground hover:bg-secondary/90">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nova
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Criar Comunidade</DialogTitle>
+                </DialogHeader>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nome</FormLabel>
+                          <FormControl>
+                            <Input placeholder="ex: Centro de Desportos" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="category"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Categoria</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione uma categoria" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {categories.map((c) => (
+                                <SelectItem key={c.value} value={c.value}>
+                                  <div className="flex items-center">
+                                    <c.icon className="mr-2 h-4 w-4" />
+                                    {c.label}
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Descrição</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Sobre o que é esta comunidade?" 
+                              className="resize-none" 
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="flex justify-end pt-4">
+                      <Button type="submit" disabled={createCommunity.isPending}>
+                        {createCommunity.isPending ? "Criando..." : "Criar Comunidade"}
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
-        {/* Breadcrumb */}
-        <nav className="flex items-center gap-1 text-sm flex-wrap">
-          <button
-            onClick={() => navigateTo(0)}
-            className={`font-medium transition-colors ${navPath.length === 0 ? "text-foreground cursor-default" : "text-muted-foreground hover:text-primary"}`}
-          >
-            Comunidades
-          </button>
-          {navPath.map((item, index) => {
-            const isLast = index === navPath.length - 1;
-            return (
-              <span key={item.id} className="flex items-center gap-1">
-                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />
-                <button
-                  onClick={() => !isLast ? navigateTo(index + 1) : undefined}
-                  className={`font-medium transition-colors ${isLast ? "text-foreground cursor-default" : "text-muted-foreground hover:text-primary"}`}
-                >
-                  {item.name}
-                </button>
-              </span>
-            );
-          })}
-        </nav>
-
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            className="pl-10"
-            placeholder="Buscar em todas as comunidades..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-
-        {/* Grid */}
-        <AnimatePresence mode="wait">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {isLoading ? (
-            <motion.div key="skeleton" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <Card key={i} className="overflow-hidden">
-                  <Skeleton className="h-20 w-full" />
-                  <CardHeader><Skeleton className="h-5 w-3/4" /><Skeleton className="h-4 w-1/3 mt-1" /></CardHeader>
-                  <CardContent><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-4/5 mt-1" /></CardContent>
-                  <CardFooter><Skeleton className="h-9 w-full" /></CardFooter>
-                </Card>
-              ))}
-            </motion.div>
-          ) : !communities?.length ? (
-            <motion.div
-              key="empty"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center py-16 text-muted-foreground"
-            >
-              <Globe className="h-12 w-12 mx-auto mb-4 opacity-30" />
-              <p className="text-lg font-medium">Nenhuma {levelLabel} encontrada</p>
-              {search && (
-                <p className="text-sm mt-1">Tente outros termos de busca</p>
-              )}
-            </motion.div>
+            Array.from({ length: 6 }).map((_, i) => (
+              <Card key={i} className="border-primary/10 overflow-hidden">
+                <div className="h-32 bg-primary/5 animate-pulse" />
+                <CardHeader>
+                  <Skeleton className="h-6 w-3/4 mb-2" />
+                  <Skeleton className="h-4 w-1/4" />
+                </CardHeader>
+                <CardContent><Skeleton className="h-16 w-full" /></CardContent>
+                <CardFooter><Skeleton className="h-10 w-full" /></CardFooter>
+              </Card>
+            ))
+          ) : communities?.length === 0 ? (
+            <div className="col-span-full text-center py-16 border rounded-xl bg-card border-dashed border-primary/20">
+              <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4 opacity-50" />
+              <h3 className="text-lg font-medium text-foreground mb-1">Nenhuma comunidade encontrada</h3>
+              <p className="text-muted-foreground">Tente outra busca ou crie uma nova.</p>
+            </div>
           ) : (
-            <motion.div
-              key={`${currentParent?.id ?? "root"}-${search}`}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
-            >
-              {communities.map(community => (
-                <CommunityCard
+            communities?.map((community, index) => {
+              const cat = categories.find(c => c.value === community.category);
+              const Icon = cat?.icon || Globe;
+              const hasChildren = (community.childrenCount ?? 0) > 0;
+
+              return (
+                <motion.div
                   key={community.id}
-                  community={community}
-                  onDrillIn={drillIn}
-                  onJoin={handleJoin}
-                  onNavigate={(id) => setLocation(`/communities/${id}`)}
-                  joinPending={joinCommunity.isPending}
-                />
-              ))}
-            </motion.div>
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                >
+                  <Card
+                    className="h-full flex flex-col border-primary/10 hover:shadow-md transition-all hover:border-primary/30 group cursor-pointer"
+                    onClick={() => setLocation(`/communities/${community.id}`)}
+                  >
+                    <div className="h-24 bg-gradient-to-r from-primary/80 to-primary flex items-center justify-center text-primary-foreground/20 relative">
+                      <Icon className="h-12 w-12" />
+                      {hasChildren && (
+                        <Badge className="absolute top-2 right-2 bg-secondary text-secondary-foreground text-xs">
+                          {community.childrenCount} sub-comunidades
+                        </Badge>
+                      )}
+                    </div>
+                    <CardHeader className="pb-2">
+                      <div className="flex justify-between items-start gap-4">
+                        <h3 className="font-bold text-lg leading-tight text-foreground group-hover:text-primary transition-colors">
+                          {community.name}
+                        </h3>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium uppercase tracking-wider">
+                        <Icon className="h-3 w-3" />
+                        {cat?.label ?? community.category}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="flex-1 pb-4">
+                      <p className="text-sm text-muted-foreground line-clamp-3">
+                        {community.description}
+                      </p>
+                      <div className="flex items-center gap-4 mt-4 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          {community.membersCount} membros
+                        </span>
+                        <span>•</span>
+                        <span>{community.postsCount} publicações</span>
+                      </div>
+                    </CardContent>
+                    <CardFooter className="pt-0 gap-2">
+                      <Button 
+                        variant="outline" 
+                        className="flex-1 border-primary/20 hover:bg-primary hover:text-primary-foreground transition-colors"
+                        onClick={(e) => handleJoin(community.id, e)}
+                        disabled={joinCommunity.isPending}
+                      >
+                        Participar
+                      </Button>
+                      {hasChildren && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="border border-primary/20 hover:bg-primary/10"
+                          onClick={() => setLocation(`/communities/${community.id}`)}
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </CardFooter>
+                  </Card>
+                </motion.div>
+              );
+            })
           )}
-        </AnimatePresence>
+        </div>
       </div>
     </Layout>
   );
