@@ -13,6 +13,8 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 
+import { getCampusImage } from "@/data/campus-images";
+
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -228,14 +230,37 @@ export default function Communities() {
                     className="h-full flex flex-col border-primary/10 hover:shadow-md transition-all hover:border-primary/30 group cursor-pointer"
                     onClick={() => setLocation(`/communities/${community.id}`)}
                   >
-                    <div className="h-24 bg-gradient-to-r from-primary/80 to-primary flex items-center justify-center text-primary-foreground/20 relative">
-                      <Icon className="h-12 w-12" />
-                      {hasChildren && (
-                        <Badge className="absolute top-2 right-2 bg-secondary text-secondary-foreground text-xs">
-                          {community.childrenCount} sub-comunidades
-                        </Badge>
-                      )}
-                    </div>
+                    {(() => {
+                      const campusImg = community.category === "campus" ? getCampusImage(community.name) : null;
+                      return (
+                        <div className="h-32 relative overflow-hidden rounded-t-lg">
+                          {campusImg ? (
+                            <>
+                              <img
+                                src={campusImg}
+                                alt={community.name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                            </>
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-r from-primary/80 to-primary flex items-center justify-center">
+                              <Icon className="h-12 w-12 text-primary-foreground/20" />
+                            </div>
+                          )}
+                          {hasChildren && (
+                            <Badge className="absolute top-2 right-2 bg-secondary/90 text-secondary-foreground text-xs backdrop-blur-sm">
+                              {community.childrenCount} sub-comunidades
+                            </Badge>
+                          )}
+                          {campusImg && (
+                            <div className="absolute bottom-2 left-3">
+                              <Icon className="h-5 w-5 text-white/70" />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                     <CardHeader className="pb-2">
                       <div className="flex justify-between items-start gap-4">
                         <h3 className="font-bold text-lg leading-tight text-foreground group-hover:text-primary transition-colors">

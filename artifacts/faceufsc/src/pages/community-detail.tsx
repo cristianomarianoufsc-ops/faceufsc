@@ -23,6 +23,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
+import { getCampusImage } from "@/data/campus-images";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
@@ -169,6 +170,7 @@ export default function CommunityDetail() {
   const hasSubCommunities = (subCommunities?.length ?? 0) > 0;
   const subLabel = subTabLabel[community.category] ?? "Sub-comunidades";
   const heroGradient = categoryColors[community.category] ?? "from-primary to-primary/80";
+  const campusImg = community.category === "campus" ? getCampusImage(community.name) : null;
 
   // Build breadcrumb trail
   const breadcrumbs = [
@@ -199,11 +201,24 @@ export default function CommunityDetail() {
         </nav>
 
         {/* Hero */}
-        <div className={`bg-gradient-to-br ${heroGradient} rounded-2xl text-white p-8 relative overflow-hidden shadow-lg`}>
+        <div className="rounded-2xl text-white relative overflow-hidden shadow-lg">
+          {/* Background: imagem de campus ou gradiente */}
+          {campusImg ? (
+            <>
+              <img
+                src={campusImg}
+                alt={community.name}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <div className={`absolute inset-0 bg-gradient-to-br ${heroGradient} opacity-75`} />
+            </>
+          ) : (
+            <div className={`absolute inset-0 bg-gradient-to-br ${heroGradient}`} />
+          )}
           <div className="absolute right-0 top-0 opacity-10 transform translate-x-1/4 -translate-y-1/4 pointer-events-none">
             <Icon className="w-72 h-72" />
           </div>
-          <div className="relative z-10">
+          <div className="p-8 relative z-10">
             <div className="flex items-center gap-2 mb-3">
               <Badge className="bg-white/20 text-white border-none px-3 py-1 uppercase tracking-widest text-xs font-bold backdrop-blur-sm">
                 {categoryLabels[community.category] ?? community.category}
