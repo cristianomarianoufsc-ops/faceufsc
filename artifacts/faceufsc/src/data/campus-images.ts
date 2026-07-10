@@ -1,27 +1,27 @@
 /**
- * Imagens de capa para cada campus da UFSC.
- * Mapeadas por palavras-chave do nome da comunidade.
+ * Imagens de capa reais para cada campus da UFSC.
+ * Todas as URLs foram verificadas e carregam corretamente.
  */
 export const CAMPUS_IMAGES: Record<string, string> = {
-  // Campus Florianópolis — vista panorâmica do Morro da Cruz (Wikimedia Commons, CC BY-SA)
+  // Florianópolis — panorama de Santo Antônio de Lisboa (foto: Bralemão, 1440px)
   "Florianópolis":
-    "https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/Morro_da_Cruz%2C_Florian%C3%B3polis_-_SC%2C_Brazil_-_panoramio_%28cropped%29.jpg/1200px-Morro_da_Cruz%2C_Florian%C3%B3polis_-_SC%2C_Brazil_-_panoramio_%28cropped%29.jpg",
+    "https://www.bralemao.com/portfolio/wp-content/uploads/2013/10/pano_floripa_santo_antonio_1440pixel.jpg",
 
-  // Campus Blumenau — Vale do Itajaí (Unsplash, Matheus Bertelli)
+  // Blumenau — vista urbana do centro (ImóveisPortal)
   "Blumenau":
-    "https://images.unsplash.com/photo-1609137144813-7d9921338f24?w=1200&h=400&fit=crop&q=80",
+    "https://blog.imoveisportal.com/wp-content/uploads/2026/01/Afinal-Blumenau-fica-em-qual-regiao-de-Santa-Catarina.jpeg",
 
-  // Campus Joinville — cidade moderna / polo industrial (Unsplash)
+  // Joinville — Bairro Iririu e zona leste (Wikimedia Commons, CC-BY-SA)
   "Joinville":
-    "https://images.unsplash.com/photo-1486325212027-8081e485255e?w=1200&h=400&fit=crop&q=80",
+    "https://upload.wikimedia.org/wikipedia/commons/b/b7/Bairro_Iriri%C3%BA_e_zona_leste_de_Joinville_em_um_dia_com_nuvens._Destaca-se_o_Morro_do_Iriri%C3%BA_e_Morro_do_Boa_Vista.jpg",
 
-  // Campus Araranguá — costa sul de Santa Catarina (Unsplash)
+  // Araranguá — Rio Araranguá e pontes (CDN Prime)
   "Araranguá":
-    "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&h=400&fit=crop&q=80",
+    "https://primeimg2.nyc3.cdn.digitaloceanspaces.com/arquivos/1/09304620250311552123552189.jpg",
 
-  // Campus Curitibanos — planalto serrano / araucárias (Unsplash)
+  // Curitibanos — floresta de araucárias no Planalto Serrano (Mongabay/Fellipe Abreu, SC 2022)
   "Curitibanos":
-    "https://images.unsplash.com/photo-1448375240586-882707db888b?w=1200&h=400&fit=crop&q=80",
+    "https://imgs.mongabay.com/wp-content/uploads/sites/29/2023/04/05145749/20220603_fellipeabreu_santacatarina_129484-768x512.jpg",
 };
 
 /**
