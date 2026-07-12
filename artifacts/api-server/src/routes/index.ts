@@ -9,6 +9,7 @@ import authRouter from "./auth";
 import storageRouter from "./storage";
 import adminRouter from "./admin";
 import connectionsRouter from "./connections";
+import forumRouter from "./forum";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,6 @@ router.use(feedRouter);
 router.use(storageRouter);
 router.use(adminRouter);
 router.use(connectionsRouter);
+router.use(forumRouter);
 
 export default router;

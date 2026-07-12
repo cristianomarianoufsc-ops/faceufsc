@@ -6,7 +6,7 @@ import {
   Users, FileText, Send, MessageCircle, Heart, Share2,
   Globe, BookOpen, FlaskConical, Activity, Music, Home,
   Building2, ChevronRight, ArrowLeft, Layers, CheckCircle2,
-  CalendarDays, Info, Hash,
+  CalendarDays, Info, Hash, MessageSquare, Plus, Pin,
 } from "lucide-react";
 import {
   useGetCommunity,
@@ -17,6 +17,9 @@ import {
   useJoinCommunity,
   useListCommunities,
   getListCommunitiesQueryKey,
+  useListTopics,
+  useCreateTopic,
+  type ForumTopic,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -113,6 +116,32 @@ export default function CommunityDetail() {
 
   const createPost = useCreatePost();
   const joinCommunity = useJoinCommunity();
+
+  // Forum
+  const { data: forumTopics = [], isLoading: topicsLoading } = useListTopics(communityId, {
+    query: { enabled: !!communityId },
+  });
+  const createTopic = useCreateTopic();
+  const [showTopicForm, setShowTopicForm] = useState(false);
+  const [topicTitle, setTopicTitle] = useState("");
+  const [topicContent, setTopicContent] = useState("");
+
+  function handleCreateTopic(e: React.FormEvent) {
+    e.preventDefault();
+    if (!topicTitle.trim() || !topicContent.trim()) return;
+    createTopic.mutate(
+      { communityId, data: { title: topicTitle, content: topicContent } },
+      {
+        onSuccess: () => {
+          setTopicTitle("");
+          setTopicContent("");
+          setShowTopicForm(false);
+          toast({ title: "Tópico criado!", description: "Seu tópico foi publicado no fórum." });
+        },
+        onError: () => toast({ title: "Erro ao criar tópico", variant: "destructive" }),
+      }
+    );
+  }
 
   const form = useForm<z.infer<typeof postSchema>>({
     resolver: zodResolver(postSchema),
@@ -266,6 +295,17 @@ export default function CommunityDetail() {
                     </span>
                   </TabsTrigger>
                 )}
+                <TabsTrigger
+                  value="forum"
+                  className="rounded-t-lg rounded-b-none border border-b-0 data-[state=active]:bg-card data-[state=active]:shadow-none data-[state=inactive]:border-transparent gap-2"
+                >
+                  <MessageSquare className="h-4 w-4" /> Fórum
+                  {forumTopics.length > 0 && (
+                    <span className="ml-1 bg-primary/10 text-primary text-xs font-bold px-1.5 py-0.5 rounded-full">
+                      {forumTopics.length}
+                    </span>
+                  )}
+                </TabsTrigger>
                 <TabsTrigger
                   value="about"
                   className="rounded-t-lg rounded-b-none border border-b-0 data-[state=active]:bg-card data-[state=active]:shadow-none data-[state=inactive]:border-transparent gap-2"
@@ -437,6 +477,130 @@ export default function CommunityDetail() {
                   )}
                 </TabsContent>
               )}
+
+              {/* FORUM TAB */}
+              <TabsContent value="forum" className="mt-0 space-y-4">
+                {/* Header + botão novo tópico */}
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    {forumTopics.length === 0
+                      ? "Nenhum tópico ainda — crie o primeiro!"
+                      : `${forumTopics.length} tópico${forumTopics.length !== 1 ? "s" : ""}`}
+                  </p>
+                  <Button
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => setShowTopicForm(v => !v)}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Novo tópico
+                  </Button>
+                </div>
+
+                {/* Formulário de novo tópico */}
+                {showTopicForm && (
+                  <Card className="border-primary/20 shadow-sm">
+                    <CardContent className="p-4">
+                      <form onSubmit={handleCreateTopic} className="space-y-3">
+                        <div>
+                          <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                            Título do tópico
+                          </label>
+                          <input
+                            type="text"
+                            value={topicTitle}
+                            onChange={e => setTopicTitle(e.target.value)}
+                            placeholder="Ex: Dúvida sobre inscrição no semestre..."
+                            maxLength={200}
+                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                            Conteúdo
+                          </label>
+                          <Textarea
+                            value={topicContent}
+                            onChange={e => setTopicContent(e.target.value)}
+                            placeholder="Descreva sua pergunta ou assunto em detalhes..."
+                            className="min-h-[100px] resize-none border-primary/20 focus-visible:ring-primary text-sm"
+                          />
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => { setShowTopicForm(false); setTopicTitle(""); setTopicContent(""); }}
+                          >
+                            Cancelar
+                          </Button>
+                          <Button
+                            type="submit"
+                            size="sm"
+                            disabled={!topicTitle.trim() || !topicContent.trim() || createTopic.isPending}
+                            className="gap-2"
+                          >
+                            <Send className="h-3.5 w-3.5" />
+                            {createTopic.isPending ? "Publicando..." : "Publicar tópico"}
+                          </Button>
+                        </div>
+                      </form>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Lista de tópicos */}
+                {topicsLoading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}
+                  </div>
+                ) : forumTopics.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <MessageSquare className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                    <p className="text-sm">Seja o primeiro a criar um tópico!</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {forumTopics.map((topic: ForumTopic) => (
+                      <Card
+                        key={topic.id}
+                        className="border-border/60 hover:border-primary/30 hover:shadow-sm transition-all cursor-pointer group"
+                        onClick={() => setLocation(`/forum/${topic.id}`)}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                {topic.isPinned && (
+                                  <Pin className="h-3.5 w-3.5 text-primary shrink-0" />
+                                )}
+                                <h4 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors leading-snug truncate">
+                                  {topic.title}
+                                </h4>
+                              </div>
+                              <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
+                                {topic.content}
+                              </p>
+                              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                <span className="font-medium">{topic.authorName}</span>
+                                <span>·</span>
+                                <span>{format(new Date(topic.createdAt), "d MMM yyyy", { locale: ptBR })}</span>
+                                <span>·</span>
+                                <span className="flex items-center gap-1">
+                                  <MessageCircle className="h-3 w-3" />
+                                  {topic.repliesCount} resposta{topic.repliesCount !== 1 ? "s" : ""}
+                                </span>
+                              </div>
+                            </div>
+                            <ChevronRight className="h-4 w-4 text-muted-foreground/50 group-hover:text-primary shrink-0 mt-1" />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
 
               {/* ABOUT TAB */}
               <TabsContent value="about" className="mt-0">

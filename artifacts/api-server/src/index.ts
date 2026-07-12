@@ -25,6 +25,31 @@ async function runMigrations() {
       updated_at TIMESTAMP NOT NULL DEFAULT NOW()
     )
   `);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS forum_topics (
+      id SERIAL PRIMARY KEY,
+      community_id INTEGER NOT NULL,
+      author_id INTEGER NOT NULL,
+      author_name TEXT NOT NULL,
+      author_avatar_url TEXT,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL,
+      is_pinned BOOLEAN NOT NULL DEFAULT FALSE,
+      replies_count INTEGER NOT NULL DEFAULT 0,
+      created_at TIMESTAMP NOT NULL DEFAULT NOW()
+    )
+  `);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS forum_replies (
+      id SERIAL PRIMARY KEY,
+      topic_id INTEGER NOT NULL REFERENCES forum_topics(id) ON DELETE CASCADE,
+      author_id INTEGER NOT NULL,
+      author_name TEXT NOT NULL,
+      author_avatar_url TEXT,
+      content TEXT NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT NOW()
+    )
+  `);
   logger.info("Migrations OK");
 }
 

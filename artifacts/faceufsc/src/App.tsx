@@ -15,6 +15,7 @@ import Profile from "@/pages/profile";
 import VerifyEmail from "@/pages/verify-email";
 import Admin from "@/pages/admin";
 import Connections from "@/pages/connections";
+import ForumTopic from "@/pages/forum-topic";
 import { ComponentType } from "react";
 
 const queryClient = new QueryClient({
@@ -92,6 +93,7 @@ function Router() {
       <Route path="/people" component={ProtectedPeopleRoute} />
       <Route path="/profile/:id" component={ProtectedProfileRoute} />
       <Route path="/connections" component={ProtectedConnectionsRoute} />
+      <Route path="/forum/:id" component={() => <ProtectedRoute component={ForumTopic} />} />
       <Route component={NotFound} />
     </Switch>
   );
